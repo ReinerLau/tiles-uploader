@@ -1,0 +1,18 @@
+services:
+  db:
+    image: postgres
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: lzx_2614150 
+  minio:
+    image: bitnami/minio
+    ports:
+      - 9000:9000
+      - 9001:9001
+    environment:
+      MINIO_BROWSER: "on"
+  db-adminer:
+    image: adminer
+    ports:
+      - 8080:8080
