@@ -61,6 +61,8 @@ export default function Home() {
   ) => {
     console.log("展开的文件夹:", expandedKeys, info);
     setExpandedKeys(expandedKeys);
+    // 切换文件夹展开状态时选中该文件夹
+    setSelectedKeys([info.node.key]);
   };
 
   /**
