@@ -17,6 +17,28 @@ export default function FolderTree() {
   ); // 新增：记录正在编辑节点的父级key
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // 初始化时获取瓦片数据
+  useEffect(() => {
+    const fetchTileData = async () => {
+      try {
+        const response = await fetch("/tile");
+        const result = await response.json();
+
+        if (result.success) {
+          setTreeData(result.data);
+          messageApi.success(`加载了 ${result.count} 个瓦片数据`);
+        } else {
+          messageApi.error(result.error || "获取瓦片数据失败");
+        }
+      } catch (error) {
+        console.error("获取瓦片数据失败:", error);
+        messageApi.error("获取瓦片数据失败");
+      }
+    };
+
+    fetchTileData();
+  }, [messageApi]);
+
   // 监听点击事件，点击容器外部时取消选择
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
