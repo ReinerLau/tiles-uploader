@@ -36,7 +36,7 @@ export async function GET() {
       if (!treeMap.has(zKey)) {
         treeMap.set(zKey, {
           key: zKey,
-          title: `Z-${z}`,
+          title: z,
           children: [],
           isLeaf: false,
         });
@@ -49,7 +49,7 @@ export async function GET() {
       if (!xNode) {
         xNode = {
           key: xKey,
-          title: `X-${x}`,
+          title: x,
           children: [],
           isLeaf: false,
         };
@@ -60,7 +60,7 @@ export async function GET() {
       const yKey = `z_${z}_x_${x}_y_${y}`;
       const yNode: TreeNode = {
         key: yKey,
-        title: `Y-${y}`,
+        title: y,
         isLeaf: true,
         tileId: id,
         fileName: fileName,
