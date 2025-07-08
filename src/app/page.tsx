@@ -9,12 +9,16 @@ export default function Home() {
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState<string>("");
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
-  const treeRef = useRef<HTMLDivElement>(null);
+  const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // 监听点击事件，点击树形组件外部时取消选择
+  // 监听点击事件，点击容器外部时取消选择
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (treeRef.current && !treeRef.current.contains(event.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
         setSelectedKeys([]);
       }
     };
@@ -52,6 +56,86 @@ export default function Home() {
     info: { node: TreeDataNode; expanded: boolean }
   ) => {
     console.log("展开的文件夹:", expandedKeys, info);
+    setExpandedKeys(expandedKeys);
+  };
+
+  /**
+   * 递归更新树节点
+   * @param nodes 树节点数组
+   * @param targetKey 目标节点key
+   * @param newChild 新增的子节点
+   * @returns 更新后的树节点数组
+   */
+  const updateTreeNodes = (
+    nodes: TreeDataNode[],
+    targetKey: React.Key,
+    newChild: TreeDataNode
+  ): TreeDataNode[] => {
+    return nodes.map((node) => {
+      if (node.key === targetKey) {
+        // 找到目标节点，添加子节点
+        const updatedChildren = [...(node.children || []), newChild];
+        return {
+          ...node,
+          children: updatedChildren,
+        };
+      } else if (node.children && node.children.length > 0) {
+        // 递归查找子节点
+        return {
+          ...node,
+          children: updateTreeNodes(node.children, targetKey, newChild),
+        };
+      }
+      return node;
+    });
+  };
+
+  /**
+   * 递归更新树节点标题
+   * @param nodes 树节点数组
+   * @param targetKey 目标节点key
+   * @param newTitle 新标题
+   * @returns 更新后的树节点数组
+   */
+  const updateTreeNodeTitle = (
+    nodes: TreeDataNode[],
+    targetKey: React.Key,
+    newTitle: string
+  ): TreeDataNode[] => {
+    return nodes.map((node) => {
+      if (node.key === targetKey) {
+        return { ...node, title: newTitle };
+      } else if (node.children && node.children.length > 0) {
+        return {
+          ...node,
+          children: updateTreeNodeTitle(node.children, targetKey, newTitle),
+        };
+      }
+      return node;
+    });
+  };
+
+  /**
+   * 递归删除树节点
+   * @param nodes 树节点数组
+   * @param targetKey 目标节点key
+   * @returns 更新后的树节点数组
+   */
+  const removeTreeNode = (
+    nodes: TreeDataNode[],
+    targetKey: React.Key
+  ): TreeDataNode[] => {
+    return nodes
+      .filter((node) => node.key !== targetKey)
+      .map((node) => {
+        if (node.children && node.children.length > 0) {
+          return {
+            ...node,
+            children: removeTreeNode(node.children, targetKey),
+          };
+        }
+        return node;
+      });
   };
 
   /**
@@ -66,7 +150,20 @@ export default function Home() {
       children: [],
     };
 
-    setTreeData([...treeData, newFolder]);
+    // 检查是否有选中的文件夹
+    if (selectedKeys.length > 0) {
+      const selectedKey = selectedKeys[0];
+      // 在选中的文件夹下新增子文件夹
+      setTreeData((prevData) =>
+        updateTreeNodes(prevData, selectedKey, newFolder)
+      );
+      // 展开父文件夹
+      setExpandedKeys((prevExpanded) => [...prevExpanded, selectedKey]);
+    } else {
+      // 在根目录新增文件夹
+      setTreeData([...treeData, newFolder]);
+    }
+
     setEditingKey(newFolderKey);
     setEditingValue("");
   };
@@ -86,19 +183,13 @@ export default function Home() {
     if (editingValue.trim()) {
       // 确认新增 - 更新文件夹名称
       setTreeData((prevData) =>
-        prevData.map((item) =>
-          item.key === editingKey
-            ? { ...item, title: editingValue.trim() }
-            : item
-        )
+        updateTreeNodeTitle(prevData, editingKey!, editingValue.trim())
       );
       // 确认新增后选中该文件夹
       setSelectedKeys([editingKey!]);
     } else {
       // 取消新增 - 删除该文件夹
-      setTreeData((prevData) =>
-        prevData.filter((item) => item.key !== editingKey)
-      );
+      setTreeData((prevData) => removeTreeNode(prevData, editingKey!));
     }
     setEditingKey(null);
     setEditingValue("");
@@ -138,20 +229,23 @@ export default function Home() {
   return (
     <div style={{ padding: "24px" }}>
       <Card>
-        <Space direction="vertical">
-          <Button type="primary" onClick={addRootFolder}>
-            新增文件夹
-          </Button>
-          <div ref={treeRef}>
-            <Tree
-              treeData={treeData}
-              selectedKeys={selectedKeys}
-              onSelect={onSelect}
-              onExpand={onExpand}
-              titleRender={titleRender}
-            />
-          </div>
-        </Space>
+        <div ref={containerRef}>
+          <Space direction="vertical">
+            <Button type="primary" onClick={addRootFolder}>
+              新增文件夹
+            </Button>
+            <div>
+              <Tree
+                treeData={treeData}
+                selectedKeys={selectedKeys}
+                expandedKeys={expandedKeys}
+                onSelect={onSelect}
+                onExpand={onExpand}
+                titleRender={titleRender}
+              />
+            </div>
+          </Space>
+        </div>
       </Card>
     </div>
   );
