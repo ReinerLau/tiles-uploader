@@ -151,6 +151,31 @@ export default function FolderTree() {
   };
 
   /**
+   * 递归更新树节点key
+   * @param nodes 树节点数组
+   * @param targetKey 目标节点key
+   * @param newKey 新key
+   * @returns 更新后的树节点数组
+   */
+  const updateTreeNodeKey = (
+    nodes: TreeDataNode[],
+    targetKey: React.Key,
+    newKey: React.Key
+  ): TreeDataNode[] => {
+    return nodes.map((node) => {
+      if (node.key === targetKey) {
+        return { ...node, key: newKey };
+      } else if (node.children && node.children.length > 0) {
+        return {
+          ...node,
+          children: updateTreeNodeKey(node.children, targetKey, newKey),
+        };
+      }
+      return node;
+    });
+  };
+
+  /**
    * 递归删除树节点
    * @param nodes 树节点数组
    * @param targetKey 目标节点key
@@ -214,13 +239,47 @@ export default function FolderTree() {
   };
 
   /**
+   * 生成新文件夹的key
+   * @param parentKey 父级节点key，null表示根目录
+   * @param folderName 文件夹名称
+   * @returns 新文件夹的key
+   */
+  const generateFolderKey = (
+    parentKey: React.Key | null,
+    folderName: string
+  ): string => {
+    if (parentKey === null) {
+      // 根目录下的文件夹，生成 z 层级的key
+      return `z_${folderName}`;
+    } else {
+      const parentKeyStr = String(parentKey);
+      if (parentKeyStr.startsWith("z_") && !parentKeyStr.includes("_x_")) {
+        // 父级是 z 层级，生成 x 层级的key
+        const zValue = parentKeyStr.split("_")[1];
+        return `z_${zValue}_x_${folderName}`;
+      } else if (
+        parentKeyStr.includes("_x_") &&
+        !parentKeyStr.includes("_y_")
+      ) {
+        // 父级是 x 层级，生成 y 层级的key
+        const parts = parentKeyStr.split("_");
+        const zValue = parts[1];
+        const xValue = parts[3];
+        return `z_${zValue}_x_${xValue}_y_${folderName}`;
+      }
+    }
+    // 默认情况下使用时间戳（不应该到达这里）
+    return `folder_${Date.now()}`;
+  };
+
+  /**
    * 新增文件夹
    */
   const addRootFolder = () => {
-    const newFolderKey = `folder_${Date.now()}`;
+    const tempFolderKey = `temp_folder_${Date.now()}`;
     const newFolder: TreeDataNode = {
       title: "",
-      key: newFolderKey,
+      key: tempFolderKey,
       isLeaf: false,
       children: [],
     };
@@ -241,7 +300,7 @@ export default function FolderTree() {
       setEditingParentKey(null); // 根目录的父级为null
     }
 
-    setEditingKey(newFolderKey);
+    setEditingKey(tempFolderKey);
     setEditingValue("");
   };
 
@@ -271,12 +330,33 @@ export default function FolderTree() {
         setTreeData((prevData) => removeTreeNode(prevData, editingKey!));
         messageApi.error("文件夹名称重复，请使用其他名称");
       } else {
-        // 确认新增 - 更新文件夹名称
-        setTreeData((prevData) =>
-          updateTreeNodeTitle(prevData, editingKey!, editingValue.trim())
+        // 生成正确的文件夹key
+        const correctKey = generateFolderKey(
+          editingParentKey,
+          editingValue.trim()
         );
-        // 确认新增后选中该文件夹
-        setSelectedKeys([editingKey!]);
+
+        // 确认新增 - 更新文件夹名称和key
+        setTreeData((prevData) => {
+          // 先更新标题
+          const updatedData = updateTreeNodeTitle(
+            prevData,
+            editingKey!,
+            editingValue.trim()
+          );
+          // 然后更新key
+          return updateTreeNodeKey(updatedData, editingKey!, correctKey);
+        });
+
+        // 更新展开状态：如果旧key在展开列表中，替换为新key
+        setExpandedKeys((prevExpanded) => {
+          return prevExpanded.map((key) =>
+            key === editingKey ? correctKey : key
+          );
+        });
+
+        // 确认新增后选中该文件夹（使用新的key）
+        setSelectedKeys([correctKey]);
       }
     } else {
       // 取消新增 - 删除该文件夹
