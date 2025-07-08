@@ -1,9 +1,7 @@
 "use client";
 
-import { Tree, Card, Typography } from "antd";
+import { Tree, Card } from "antd";
 import type { TreeDataNode } from "antd";
-
-const { Title } = Typography;
 
 /**
  * 文件夹结构数据
@@ -174,10 +172,6 @@ export default function Home() {
 
   return (
     <div style={{ padding: "24px", maxWidth: "800px", margin: "0 auto" }}>
-      <Title level={2} style={{ marginBottom: "24px" }}>
-        文件夹结构展示
-      </Title>
-
       <Card title="项目文件结构" style={{ width: "100%" }}>
         <Tree
           showIcon
