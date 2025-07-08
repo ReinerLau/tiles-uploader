@@ -19,7 +19,7 @@ interface TileDeleterProps {
   /**
    * 删除成功后的回调函数
    */
-  onDeleteSuccess?: (deletedTileData: TileData) => void;
+  onDeleteSuccess?: (deletedTiles: TileData[]) => void;
 }
 
 export default function TileDeleter({
@@ -72,21 +72,46 @@ export default function TileDeleter({
   };
 
   /**
-   * 检查选中的节点是否为瓦片文件
-   * @returns 是否为瓦片文件
+   * 检查选中的节点类型
+   * @returns 节点类型信息
    */
-  const isSelectedNodeTileFile = (): boolean => {
-    if (selectedKeys.length === 0) return false;
+  const getSelectedNodeType = (): {
+    isValid: boolean;
+    type: "tile" | "folder";
+    level: number;
+    path: string[];
+  } => {
+    if (selectedKeys.length === 0) {
+      return { isValid: false, type: "tile", level: 0, path: [] };
+    }
 
     const selectedKey = selectedKeys[0];
     const path = getNodePath(selectedKey);
 
-    // 检查路径层级是否符合要求（需要3层：z/x/y）
-    if (path.length !== 3) return false;
+    // 检查路径层级
+    if (path.length === 0) {
+      return { isValid: false, type: "tile", level: 0, path: [] };
+    }
 
-    // 检查最后一层是否为数字格式（瓦片文件名）
-    const y = path[2];
-    return /^\d+$/.test(y);
+    // 验证所有路径参数是否为数字格式
+    const allNumeric = path.every((segment) => /^\d+$/.test(segment));
+    if (!allNumeric) {
+      return { isValid: false, type: "tile", level: 0, path: [] };
+    }
+
+    // 根据路径层级确定类型
+    if (path.length === 1) {
+      // z 层级文件夹
+      return { isValid: true, type: "folder", level: 1, path };
+    } else if (path.length === 2) {
+      // z/x 层级文件夹
+      return { isValid: true, type: "folder", level: 2, path };
+    } else if (path.length === 3) {
+      // z/x/y 瓦片文件
+      return { isValid: true, type: "tile", level: 3, path };
+    }
+
+    return { isValid: false, type: "tile", level: 0, path: [] };
   };
 
   /**
@@ -94,34 +119,25 @@ export default function TileDeleter({
    */
   const handleDelete = async () => {
     try {
-      // 检查是否选中了瓦片文件
+      // 检查是否选中了有效节点
       if (selectedKeys.length === 0) {
-        messageApi.error("请先选择一个瓦片文件");
+        messageApi.error("请先选择一个瓦片文件或文件夹");
         return;
       }
 
-      if (!isSelectedNodeTileFile()) {
-        messageApi.error("请选择一个瓦片文件（需要选择三层级的文件：z/x/y）");
+      const nodeType = getSelectedNodeType();
+      if (!nodeType.isValid) {
+        messageApi.error("请选择一个有效的瓦片文件或文件夹");
         return;
       }
 
-      // 获取选中节点的路径
-      const selectedKey = selectedKeys[0];
-      const path = getNodePath(selectedKey);
+      const { path } = nodeType;
 
-      // 提取 z, x, y 参数
-      const z = path[0]; // 第一层级文件夹名作为 z 参数
-      const x = path[1]; // 第二层级文件夹名作为 x 参数
-      const y = path[2]; // 第三层级文件夹名作为 y 参数
-
-      // 验证参数是否为有效数字格式
-      if (!/^\d+$/.test(z) || !/^\d+$/.test(x) || !/^\d+$/.test(y)) {
-        messageApi.error("文件夹名称必须是有效的数字");
-        return;
-      }
+      // 构建API路径
+      const apiPath = path.join("/");
 
       // 发送删除请求到后端 API
-      const response = await fetch(`/tile/${z}/${x}/${y}`, {
+      const response = await fetch(`/tile/${apiPath}`, {
         method: "DELETE",
       });
 
@@ -132,18 +148,31 @@ export default function TileDeleter({
 
       const result = await response.json();
 
-      messageApi.success(`瓦片删除成功！文件名：${result.data.fileName}`);
+      const deletionType = nodeType.type === "tile" ? "瓦片" : "文件夹";
+      const deletedCount = result.data.deletedCount || 1;
+
+      messageApi.success(
+        `${deletionType}删除成功！共删除 ${deletedCount} 个瓦片记录`
+      );
 
       // 调用回调函数更新树形数据
-      if (onDeleteSuccess && result.data) {
-        const tileData: TileData = {
-          id: result.data.id,
-          fileName: result.data.fileName,
-          z: result.data.z,
-          x: result.data.x,
-          y: result.data.y,
-        };
-        onDeleteSuccess(tileData);
+      if (onDeleteSuccess && result.data.deletedTiles) {
+        const deletedTiles: TileData[] = result.data.deletedTiles.map(
+          (tile: {
+            id: string;
+            fileName: string;
+            z: string;
+            x: string;
+            y: string;
+          }) => ({
+            id: tile.id,
+            fileName: tile.fileName,
+            z: tile.z,
+            x: tile.x,
+            y: tile.y,
+          })
+        );
+        onDeleteSuccess(deletedTiles);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "删除失败";
@@ -155,18 +184,22 @@ export default function TileDeleter({
    * 显示删除确认对话框
    */
   const showDeleteConfirm = () => {
-    if (!isSelectedNodeTileFile()) {
-      messageApi.error("请选择一个瓦片文件（需要选择三层级的文件：z/x/y）");
+    const nodeType = getSelectedNodeType();
+    if (!nodeType.isValid) {
+      messageApi.error("请选择一个有效的瓦片文件或文件夹");
       return;
     }
 
-    const selectedKey = selectedKeys[0];
-    const path = getNodePath(selectedKey);
-    const fileName = `${path[0]}-${path[1]}-${path[2]}`;
+    const { type, path } = nodeType;
+    const pathStr = path.join("/");
+    const itemName =
+      type === "tile" ? `瓦片文件 "${pathStr}"` : `文件夹 "${pathStr}"`;
+    const actionDescription =
+      type === "tile" ? "删除该瓦片文件" : "删除该文件夹及其下所有瓦片";
 
     modal.confirm({
       title: "确认删除",
-      content: `确定要删除瓦片文件 "${fileName}" 吗？此操作不可撤销。`,
+      content: `确定要${actionDescription} ${itemName} 吗？此操作不可撤销。`,
       okText: "确认删除",
       okType: "danger",
       cancelText: "取消",
@@ -174,16 +207,16 @@ export default function TileDeleter({
     });
   };
 
+  const nodeType = getSelectedNodeType();
+  const buttonText =
+    nodeType.isValid && nodeType.type === "folder" ? "删除文件夹" : "删除瓦片";
+
   return (
     <>
       {contextHolder}
       {modalContextHolder}
-      <Button
-        danger
-        onClick={showDeleteConfirm}
-        disabled={!isSelectedNodeTileFile()}
-      >
-        删除瓦片
+      <Button danger onClick={showDeleteConfirm} disabled={!nodeType.isValid}>
+        {buttonText}
       </Button>
     </>
   );

@@ -200,6 +200,26 @@ export function addTileToTree(
 }
 
 /**
+ * 从现有树形结构移除多个瓦片（用于文件夹删除）
+ * @param treeData 现有的树形数据
+ * @param tilesToRemove 要移除的瓦片数据数组
+ * @returns 更新后的树形数据
+ */
+export function removeTilesFromTree(
+  treeData: TreeDataNode[],
+  tilesToRemove: TileData[]
+): TreeDataNode[] {
+  let newData = [...treeData];
+
+  // 逐个移除瓦片
+  tilesToRemove.forEach((tile) => {
+    newData = removeTileFromTree(newData, tile);
+  });
+
+  return newData;
+}
+
+/**
  * 从现有树形结构移除单个瓦片
  * @param treeData 现有的树形数据
  * @param tileData 要移除的瓦片数据

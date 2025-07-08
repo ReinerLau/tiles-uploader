@@ -7,7 +7,7 @@ import TileUploader from "./TileUploader";
 import TileDeleter from "./TileDeleter";
 import {
   addTileToTree,
-  removeTileFromTree,
+  removeTilesFromTree,
   type TileData,
 } from "@/app/utils/treeUtils";
 
@@ -309,11 +309,11 @@ export default function FolderTree() {
 
   /**
    * 更新树形数据 - 在瓦片删除成功后调用
-   * @param deletedTileData 被删除的瓦片数据
+   * @param deletedTiles 被删除的瓦片数据数组
    */
-  const updateTreeDataAfterDelete = (deletedTileData: TileData) => {
+  const updateTreeDataAfterDelete = (deletedTiles: TileData[]) => {
     setTreeData((prevData) => {
-      return removeTileFromTree(prevData, deletedTileData);
+      return removeTilesFromTree(prevData, deletedTiles);
     });
   };
 

@@ -148,6 +148,10 @@ export async function POST(
 /**
  * DELETE /tile/{z}/{x}/{y}
  * 删除瓦片记录
+ * 支持文件夹删除：
+ * - DELETE /tile/{z} - 删除整个 z 层级文件夹下的所有瓦片
+ * - DELETE /tile/{z}/{x} - 删除 z/x 文件夹下的所有瓦片
+ * - DELETE /tile/{z}/{x}/{y} - 删除单个瓦片
  */
 export async function DELETE(
   request: NextRequest,
@@ -161,54 +165,80 @@ export async function DELETE(
     const x = slug[1];
     const y = slug[2];
 
-    // 验证路径参数
-    if (!z || !x || !y) {
+    // 验证路径参数 - 至少需要 z 参数
+    if (!z) {
       return NextResponse.json(
-        { error: "路径参数 z、x、y 都是必需的" },
+        { error: "路径参数 z 是必需的" },
         { status: 400 }
       );
     }
 
     // 验证参数是否为有效数字格式
-    if (!/^\d+$/.test(z) || !/^\d+$/.test(x) || !/^\d+$/.test(y)) {
+    if (!/^\d+$/.test(z)) {
       return NextResponse.json(
-        { error: "z、x、y 参数必须是有效的数字" },
+        { error: "z 参数必须是有效的数字" },
         { status: 400 }
       );
     }
 
-    // 在后端组装 fileName 参数：z-x-y
-    const fileName = `${z}-${x}-${y}`;
+    if (x && !/^\d+$/.test(x)) {
+      return NextResponse.json(
+        { error: "x 参数必须是有效的数字" },
+        { status: 400 }
+      );
+    }
 
-    // 检查瓦片记录是否存在
-    const existingTile = await prisma.tile.findFirst({
-      where: {
-        fileName: fileName,
-      },
+    if (y && !/^\d+$/.test(y)) {
+      return NextResponse.json(
+        { error: "y 参数必须是有效的数字" },
+        { status: 400 }
+      );
+    }
+
+    // 构建查询条件
+    const where: {
+      z: string;
+      x?: string;
+      y?: string;
+    } = { z };
+
+    if (x) where.x = x;
+    if (y) where.y = y;
+
+    // 检查要删除的瓦片记录是否存在
+    const existingTiles = await prisma.tile.findMany({
+      where,
     });
 
-    if (!existingTile) {
+    if (existingTiles.length === 0) {
+      const pathStr = y ? `${z}/${x}/${y}` : x ? `${z}/${x}` : z;
       return NextResponse.json(
         {
           error: "瓦片记录不存在",
-          details: `fileName "${fileName}" 不存在，无法删除`,
+          details: `路径 "${pathStr}" 下没有找到瓦片记录`,
         },
         { status: 404 }
       );
     }
 
     // 删除瓦片记录
-    const deletedTile = await prisma.tile.delete({
-      where: {
-        id: existingTile.id,
-      },
+    const deleteResult = await prisma.tile.deleteMany({
+      where,
     });
 
-    // 返回删除的记录信息
+    // 构建返回信息
+    const pathStr = y ? `${z}/${x}/${y}` : x ? `${z}/${x}` : z;
+    const deletionType = y ? "瓦片" : "文件夹";
+
     return NextResponse.json({
       success: true,
-      data: deletedTile,
-      message: "瓦片记录删除成功",
+      data: {
+        deletedCount: deleteResult.count,
+        deletedTiles: existingTiles,
+        path: pathStr,
+        type: deletionType,
+      },
+      message: `${deletionType}删除成功，共删除 ${deleteResult.count} 个瓦片记录`,
     });
   } catch (error) {
     console.error("删除瓦片记录失败:", error);
