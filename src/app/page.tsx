@@ -1,14 +1,17 @@
 "use client";
 
-import { Tree, Card } from "antd";
+import { Tree, Card, Button, Space } from "antd";
+import { useState } from "react";
 import type { TreeDataNode } from "antd";
 
 /**
  * 文件夹结构数据
  */
-const treeData: TreeDataNode[] = [];
+const initialTreeData: TreeDataNode[] = [];
 
 export default function Home() {
+  const [treeData, setTreeData] = useState<TreeDataNode[]>(initialTreeData);
+
   const onSelect = (
     selectedKeys: React.Key[],
     info: {
@@ -27,10 +30,27 @@ export default function Home() {
     console.log("展开的文件夹:", expandedKeys, info);
   };
 
+  const addRootFolder = () => {
+    const newFolderKey = `folder_${Date.now()}`;
+    const newFolder: TreeDataNode = {
+      title: `新文件夹${treeData.length + 1}`,
+      key: newFolderKey,
+      isLeaf: false,
+      children: [],
+    };
+
+    setTreeData([...treeData, newFolder]);
+  };
+
   return (
     <div style={{ padding: "24px" }}>
       <Card>
-        <Tree treeData={treeData} onSelect={onSelect} onExpand={onExpand} />
+        <Space direction="vertical">
+          <Button type="primary" onClick={addRootFolder}>
+            新增文件夹
+          </Button>
+          <Tree treeData={treeData} onSelect={onSelect} onExpand={onExpand} />
+        </Space>
       </Card>
     </div>
   );
