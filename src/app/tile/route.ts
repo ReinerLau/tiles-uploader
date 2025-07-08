@@ -6,9 +6,9 @@ import prisma from "@/app/utils/prisma";
  */
 interface CreateTileRequest {
   fileName: string;
-  z: number;
-  x: number;
-  y: number;
+  z: string;
+  x: string;
+  y: string;
 }
 
 /**
@@ -25,15 +25,15 @@ export async function GET(request: NextRequest) {
 
     // 构建查询条件
     const where: {
-      z?: number;
-      x?: number;
-      y?: number;
+      z?: string;
+      x?: string;
+      y?: string;
       fileName?: { contains: string };
     } = {};
 
-    if (z !== null) where.z = parseInt(z);
-    if (x !== null) where.x = parseInt(x);
-    if (y !== null) where.y = parseInt(y);
+    if (z !== null) where.z = z;
+    if (x !== null) where.x = x;
+    if (y !== null) where.y = y;
     if (fileName) where.fileName = { contains: fileName };
 
     // 查询瓦片记录
@@ -79,12 +79,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (
-      typeof body.z !== "number" ||
-      typeof body.x !== "number" ||
-      typeof body.y !== "number"
+      typeof body.z !== "string" ||
+      typeof body.x !== "string" ||
+      typeof body.y !== "string"
     ) {
       return NextResponse.json(
-        { error: "z、x、y 坐标必须是数字" },
+        { error: "z、x、y 坐标必须是字符串" },
         { status: 400 }
       );
     }

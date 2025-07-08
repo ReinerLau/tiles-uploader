@@ -110,8 +110,8 @@ export default function TileUploader({
       const path = getNodePath(selectedKey);
 
       // 提取 z, x 参数
-      const z = parseInt(path[0]); // 第一层级文件夹名作为 z 参数
-      const x = parseInt(path[1]); // 第二层级文件夹名作为 x 参数
+      const z = path[0]; // 第一层级文件夹名作为 z 参数
+      const x = path[1]; // 第二层级文件夹名作为 x 参数
 
       // 从文件名中提取 y 参数（假设文件名格式为 "y.jpg"）
       const fileName = (file as File).name;
@@ -119,13 +119,13 @@ export default function TileUploader({
       if (!yMatch) {
         throw new Error("文件名格式不正确，应为 'y.jpg' 格式");
       }
-      const y = parseInt(yMatch[1]);
+      const y = yMatch[1];
 
       // 构建 filename 参数：z-x-y
       const filename = `${z}-${x}-${y}`;
 
-      // 验证参数是否为有效数字
-      if (isNaN(z) || isNaN(x) || isNaN(y)) {
+      // 验证参数是否为有效数字格式
+      if (!/^\d+$/.test(z) || !/^\d+$/.test(x) || !/^\d+$/.test(y)) {
         throw new Error("文件夹名称和文件名必须是有效的数字");
       }
 

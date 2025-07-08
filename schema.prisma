@@ -10,7 +10,7 @@ generator client {
 model Tile {
     id       String @id @default(uuid())
     fileName String
-    z        Int
-    x        Int
-    y        Int
+    z        String
+    x        String
+    y        String
 }
