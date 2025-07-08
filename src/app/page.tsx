@@ -171,8 +171,8 @@ export default function Home() {
   };
 
   return (
-    <div style={{ padding: "24px", maxWidth: "800px", margin: "0 auto" }}>
-      <Card title="项目文件结构" style={{ width: "100%" }}>
+    <div style={{ padding: "24px" }}>
+      <Card>
         <Tree
           showIcon
           defaultExpandedKeys={["src", "app", "public"]}
