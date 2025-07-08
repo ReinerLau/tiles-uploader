@@ -144,3 +144,86 @@ export async function POST(
     return NextResponse.json({ error: "服务器内部错误" }, { status: 500 });
   }
 }
+
+/**
+ * DELETE /tile/{z}/{x}/{y}
+ * 删除瓦片记录
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { slug: string[] } }
+) {
+  try {
+    const { slug } = params;
+
+    // 从路径中提取 z、x、y 参数
+    const z = slug[0];
+    const x = slug[1];
+    const y = slug[2];
+
+    // 验证路径参数
+    if (!z || !x || !y) {
+      return NextResponse.json(
+        { error: "路径参数 z、x、y 都是必需的" },
+        { status: 400 }
+      );
+    }
+
+    // 验证参数是否为有效数字格式
+    if (!/^\d+$/.test(z) || !/^\d+$/.test(x) || !/^\d+$/.test(y)) {
+      return NextResponse.json(
+        { error: "z、x、y 参数必须是有效的数字" },
+        { status: 400 }
+      );
+    }
+
+    // 在后端组装 fileName 参数：z-x-y
+    const fileName = `${z}-${x}-${y}`;
+
+    // 检查瓦片记录是否存在
+    const existingTile = await prisma.tile.findFirst({
+      where: {
+        fileName: fileName,
+      },
+    });
+
+    if (!existingTile) {
+      return NextResponse.json(
+        {
+          error: "瓦片记录不存在",
+          details: `fileName "${fileName}" 不存在，无法删除`,
+        },
+        { status: 404 }
+      );
+    }
+
+    // 删除瓦片记录
+    const deletedTile = await prisma.tile.delete({
+      where: {
+        id: existingTile.id,
+      },
+    });
+
+    // 返回删除的记录信息
+    return NextResponse.json({
+      success: true,
+      data: deletedTile,
+      message: "瓦片记录删除成功",
+    });
+  } catch (error) {
+    console.error("删除瓦片记录失败:", error);
+
+    // 处理 Prisma 错误
+    if (error instanceof Error) {
+      return NextResponse.json(
+        {
+          error: "删除瓦片记录失败",
+          details: error.message,
+        },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ error: "服务器内部错误" }, { status: 500 });
+  }
+}

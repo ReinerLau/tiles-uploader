@@ -4,7 +4,12 @@ import { Tree, Card, Button, Space, Input, message } from "antd";
 import { useState, useRef, useEffect } from "react";
 import type { TreeDataNode } from "antd";
 import TileUploader from "./TileUploader";
-import { addTileToTree, type TileData } from "@/app/utils/treeUtils";
+import TileDeleter from "./TileDeleter";
+import {
+  addTileToTree,
+  removeTileFromTree,
+  type TileData,
+} from "@/app/utils/treeUtils";
 
 export default function FolderTree() {
   const [messageApi, contextHolder] = message.useMessage();
@@ -303,6 +308,16 @@ export default function FolderTree() {
   };
 
   /**
+   * 更新树形数据 - 在瓦片删除成功后调用
+   * @param deletedTileData 被删除的瓦片数据
+   */
+  const updateTreeDataAfterDelete = (deletedTileData: TileData) => {
+    setTreeData((prevData) => {
+      return removeTileFromTree(prevData, deletedTileData);
+    });
+  };
+
+  /**
    * 渲染树节点标题
    * @param node 树节点
    * @returns 渲染后的树节点标题
@@ -338,6 +353,11 @@ export default function FolderTree() {
                   selectedKeys={selectedKeys}
                   treeData={treeData}
                   onUploadSuccess={updateTreeDataAfterUpload}
+                />
+                <TileDeleter
+                  selectedKeys={selectedKeys}
+                  treeData={treeData}
+                  onDeleteSuccess={updateTreeDataAfterDelete}
                 />
               </Space>
               <div>

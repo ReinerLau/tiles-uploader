@@ -198,3 +198,50 @@ export function addTileToTree(
   // 对树形数据进行排序
   return sortTreeData(newData);
 }
+
+/**
+ * 从现有树形结构移除单个瓦片
+ * @param treeData 现有的树形数据
+ * @param tileData 要移除的瓦片数据
+ * @returns 更新后的树形数据
+ */
+export function removeTileFromTree(
+  treeData: TreeDataNode[],
+  tileData: TileData
+): TreeDataNode[] {
+  const { z, x, y } = tileData;
+  const newData = [...treeData];
+
+  // 构建节点key
+  const zKey = buildNodeKey(z);
+  const xKey = buildNodeKey(z, x);
+  const yKey = buildNodeKey(z, x, y);
+
+  // 查找 z 层级节点
+  const zNode = newData.find((node) => node.key === zKey);
+  if (!zNode || !zNode.children) {
+    return newData; // 如果找不到 z 节点，直接返回原数据
+  }
+
+  // 查找 x 层级节点
+  const xNode = zNode.children.find((child) => child.key === xKey);
+  if (!xNode || !xNode.children) {
+    return newData; // 如果找不到 x 节点，直接返回原数据
+  }
+
+  // 从 x 节点的子节点中移除 y 节点
+  xNode.children = xNode.children.filter((child) => child.key !== yKey);
+
+  // 如果 x 节点没有子节点了，从 z 节点中移除 x 节点
+  if (xNode.children.length === 0) {
+    zNode.children = zNode.children.filter((child) => child.key !== xKey);
+  }
+
+  // 如果 z 节点没有子节点了，从根节点中移除 z 节点
+  if (zNode.children.length === 0) {
+    return newData.filter((node) => node.key !== zKey);
+  }
+
+  // 对树形数据进行排序
+  return sortTreeData(newData);
+}
