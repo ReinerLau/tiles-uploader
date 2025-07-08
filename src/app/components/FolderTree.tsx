@@ -3,6 +3,7 @@
 import { Tree, Card, Button, Space, Input, message } from "antd";
 import { useState, useRef, useEffect } from "react";
 import type { TreeDataNode } from "antd";
+import TileUploader from "./TileUploader";
 
 export default function FolderTree() {
   const [messageApi, contextHolder] = message.useMessage();
@@ -296,9 +297,12 @@ export default function FolderTree() {
         <Card>
           <div ref={containerRef}>
             <Space direction="vertical">
-              <Button type="primary" onClick={addRootFolder}>
-                新增文件夹
-              </Button>
+              <Space>
+                <Button type="primary" onClick={addRootFolder}>
+                  新增文件夹
+                </Button>
+                <TileUploader selectedKeys={selectedKeys} treeData={treeData} />
+              </Space>
               <div>
                 <Tree
                   treeData={treeData}
