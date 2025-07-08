@@ -2,39 +2,31 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/app/utils/prisma";
 
 /**
- * 创建瓦片记录的请求体接口
- */
-interface CreateTileRequest {
-  fileName: string;
-  z: string;
-  x: string;
-  y: string;
-}
-
-/**
- * GET /tile
+ * GET /tile/{z}/{x}/{y}
  * 获取瓦片记录列表
  */
-export async function GET(request: NextRequest) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { slug: string[] } }
+) {
   try {
-    const { searchParams } = new URL(request.url);
-    const z = searchParams.get("z");
-    const x = searchParams.get("x");
-    const y = searchParams.get("y");
-    const fileName = searchParams.get("fileName");
+    const { slug } = params;
+
+    // 解析路径参数
+    const z = slug[0];
+    const x = slug[1];
+    const y = slug[2];
 
     // 构建查询条件
     const where: {
       z?: string;
       x?: string;
       y?: string;
-      fileName?: { contains: string };
     } = {};
 
-    if (z !== null) where.z = z;
-    if (x !== null) where.x = x;
-    if (y !== null) where.y = y;
-    if (fileName) where.fileName = { contains: fileName };
+    if (z) where.z = z;
+    if (x) where.x = x;
+    if (y) where.y = y;
 
     // 查询瓦片记录
     const tiles = await prisma.tile.findMany({
@@ -62,40 +54,50 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * POST /tile
+ * POST /tile/{z}/{x}/{y}
  * 创建瓦片文件信息记录
  */
-export async function POST(request: NextRequest) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { slug: string[] } }
+) {
   try {
-    // 解析请求体
-    const body: CreateTileRequest = await request.json();
+    const { slug } = params;
 
-    // 验证必需字段
-    if (!body.fileName || typeof body.fileName !== "string") {
+    // 从路径中提取 z、x、y 参数
+    const z = slug[0];
+    const x = slug[1];
+    const y = slug[2];
+
+    // 验证路径参数
+    if (!z || !x || !y) {
       return NextResponse.json(
-        { error: "文件名是必需的，且必须是字符串" },
+        { error: "路径参数 z、x、y 都是必需的" },
         { status: 400 }
       );
     }
 
-    if (
-      typeof body.z !== "string" ||
-      typeof body.x !== "string" ||
-      typeof body.y !== "string"
-    ) {
+    // 可以解析请求体，但不需要验证任何字段
+    // 所有必需的参数都从路径中获取
+
+    // 验证参数是否为有效数字格式
+    if (!/^\d+$/.test(z) || !/^\d+$/.test(x) || !/^\d+$/.test(y)) {
       return NextResponse.json(
-        { error: "z、x、y 坐标必须是字符串" },
+        { error: "z、x、y 参数必须是有效的数字" },
         { status: 400 }
       );
     }
+
+    // 在后端组装 fileName 参数：z-x-y
+    const fileName = `${z}-${x}-${y}`;
 
     // 创建瓦片记录
     const tile = await prisma.tile.create({
       data: {
-        fileName: body.fileName,
-        z: body.z,
-        x: body.x,
-        y: body.y,
+        fileName: fileName,
+        z: z,
+        x: x,
+        y: y,
       },
     });
 

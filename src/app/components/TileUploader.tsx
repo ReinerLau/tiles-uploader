@@ -121,26 +121,14 @@ export default function TileUploader({
       }
       const y = yMatch[1];
 
-      // 构建 filename 参数：z-x-y
-      const filename = `${z}-${x}-${y}`;
-
       // 验证参数是否为有效数字格式
       if (!/^\d+$/.test(z) || !/^\d+$/.test(x) || !/^\d+$/.test(y)) {
         throw new Error("文件夹名称和文件名必须是有效的数字");
       }
 
       // 发送请求到后端 API
-      const response = await fetch("/tile", {
+      const response = await fetch(`/tile/${z}/${x}/${y}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          fileName: filename,
-          z: z,
-          x: x,
-          y: y,
-        }),
       });
 
       if (!response.ok) {
@@ -150,7 +138,7 @@ export default function TileUploader({
 
       const result = await response.json();
 
-      messageApi.success(`文件上传成功！文件名：${filename}`);
+      messageApi.success(`文件上传成功！文件名：${result.data.fileName}`);
       onSuccess?.(result);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "上传失败";
