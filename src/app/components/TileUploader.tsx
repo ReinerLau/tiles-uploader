@@ -2,6 +2,7 @@
 
 import { Button, Upload, message } from "antd";
 import type { TreeDataNode, UploadFile, UploadProps } from "antd";
+import type { TileData } from "@/app/utils/treeUtils";
 
 /**
  * 瓦片上传组件的属性
@@ -18,13 +19,7 @@ interface TileUploaderProps {
   /**
    * 上传成功后的回调函数
    */
-  onUploadSuccess?: (newTileData: {
-    id: string;
-    fileName: string;
-    z: string;
-    x: string;
-    y: string;
-  }) => void;
+  onUploadSuccess?: (newTileData: TileData) => void;
 }
 
 export default function TileUploader({
@@ -153,13 +148,14 @@ export default function TileUploader({
 
       // 调用回调函数更新树形数据
       if (onUploadSuccess && result.data) {
-        onUploadSuccess({
+        const tileData: TileData = {
           id: result.data.id,
           fileName: result.data.fileName,
           z: result.data.z,
           x: result.data.x,
           y: result.data.y,
-        });
+        };
+        onUploadSuccess(tileData);
       }
 
       onSuccess?.(result);
