@@ -91,6 +91,23 @@ export async function POST(
     // 在后端组装 fileName 参数：z-x-y
     const fileName = `${z}-${x}-${y}`;
 
+    // 检查是否已存在相同的 fileName
+    const existingTile = await prisma.tile.findFirst({
+      where: {
+        fileName: fileName,
+      },
+    });
+
+    if (existingTile) {
+      return NextResponse.json(
+        {
+          error: "瓦片记录已存在",
+          details: `fileName "${fileName}" 已存在，无法重复创建`,
+        },
+        { status: 409 }
+      );
+    }
+
     // 创建瓦片记录
     const tile = await prisma.tile.create({
       data: {
