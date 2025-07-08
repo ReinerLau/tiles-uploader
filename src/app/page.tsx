@@ -1,13 +1,29 @@
 "use client";
 
 import { Tree, Card, Button, Space, Input } from "antd";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { TreeDataNode } from "antd";
 
 export default function Home() {
   const [treeData, setTreeData] = useState<TreeDataNode[]>([]);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState<string>("");
+  const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
+  const treeRef = useRef<HTMLDivElement>(null);
+
+  // 监听点击事件，点击树形组件外部时取消选择
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (treeRef.current && !treeRef.current.contains(event.target as Node)) {
+        setSelectedKeys([]);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   /**
    * 选中文件/文件夹
@@ -23,6 +39,7 @@ export default function Home() {
     }
   ) => {
     console.log("选中的文件/文件夹:", selectedKeys, info);
+    setSelectedKeys(selectedKeys);
   };
 
   /**
@@ -75,6 +92,8 @@ export default function Home() {
             : item
         )
       );
+      // 确认新增后选中该文件夹
+      setSelectedKeys([editingKey!]);
     } else {
       // 取消新增 - 删除该文件夹
       setTreeData((prevData) =>
@@ -123,12 +142,15 @@ export default function Home() {
           <Button type="primary" onClick={addRootFolder}>
             新增文件夹
           </Button>
-          <Tree
-            treeData={treeData}
-            onSelect={onSelect}
-            onExpand={onExpand}
-            titleRender={titleRender}
-          />
+          <div ref={treeRef}>
+            <Tree
+              treeData={treeData}
+              selectedKeys={selectedKeys}
+              onSelect={onSelect}
+              onExpand={onExpand}
+              titleRender={titleRender}
+            />
+          </div>
         </Space>
       </Card>
     </div>
