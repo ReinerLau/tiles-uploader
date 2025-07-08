@@ -15,11 +15,22 @@ interface TileUploaderProps {
    * 树节点数据数组
    */
   treeData: TreeDataNode[];
+  /**
+   * 上传成功后的回调函数
+   */
+  onUploadSuccess?: (newTileData: {
+    id: string;
+    fileName: string;
+    z: string;
+    x: string;
+    y: string;
+  }) => void;
 }
 
 export default function TileUploader({
   selectedKeys,
   treeData,
+  onUploadSuccess,
 }: TileUploaderProps) {
   const [messageApi, contextHolder] = message.useMessage();
 
@@ -139,6 +150,18 @@ export default function TileUploader({
       const result = await response.json();
 
       messageApi.success(`文件上传成功！文件名：${result.data.fileName}`);
+
+      // 调用回调函数更新树形数据
+      if (onUploadSuccess && result.data) {
+        onUploadSuccess({
+          id: result.data.id,
+          fileName: result.data.fileName,
+          z: result.data.z,
+          x: result.data.x,
+          y: result.data.y,
+        });
+      }
+
       onSuccess?.(result);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "上传失败";

@@ -292,6 +292,99 @@ export default function FolderTree() {
   };
 
   /**
+   * 更新树形数据 - 在瓦片上传成功后调用
+   * @param newTileData 新的瓦片数据
+   */
+  const updateTreeDataAfterUpload = (newTileData: {
+    id: string;
+    fileName: string;
+    z: string;
+    x: string;
+    y: string;
+  }) => {
+    const { z, x, y, id, fileName } = newTileData;
+
+    // 构建节点key
+    const zKey = `z_${z}`;
+    const xKey = `z_${z}_x_${x}`;
+    const yKey = `z_${z}_x_${x}_y_${y}`;
+
+    setTreeData((prevData) => {
+      const newData = [...prevData];
+
+      // 查找或创建 z 层级节点
+      let zNode = newData.find((node) => node.key === zKey);
+      if (!zNode) {
+        zNode = {
+          key: zKey,
+          title: z,
+          children: [],
+          isLeaf: false,
+        };
+        newData.push(zNode);
+      }
+
+      // 查找或创建 x 层级节点
+      let xNode = zNode.children?.find((child) => child.key === xKey);
+      if (!xNode) {
+        xNode = {
+          key: xKey,
+          title: x,
+          children: [],
+          isLeaf: false,
+        };
+        if (!zNode.children) zNode.children = [];
+        zNode.children.push(xNode);
+      }
+
+      // 创建 y 层级节点（叶子节点）
+      const yNode = {
+        key: yKey,
+        title: y,
+        isLeaf: true,
+        tileId: id,
+        fileName: fileName,
+      };
+
+      // 检查是否已存在相同的 y 节点
+      const existingYNode = xNode.children?.find((child) => child.key === yKey);
+      if (!existingYNode) {
+        if (!xNode.children) xNode.children = [];
+        xNode.children.push(yNode);
+      }
+
+      // 对树形数据进行排序
+      newData.sort((a, b) => {
+        const aZ = parseInt(String(a.key).split("_")[1]);
+        const bZ = parseInt(String(b.key).split("_")[1]);
+        return aZ - bZ;
+      });
+
+      newData.forEach((zNode) => {
+        if (zNode.children) {
+          zNode.children.sort((a, b) => {
+            const aX = parseInt(String(a.key).split("_")[3]);
+            const bX = parseInt(String(b.key).split("_")[3]);
+            return aX - bX;
+          });
+
+          zNode.children.forEach((xNode) => {
+            if (xNode.children) {
+              xNode.children.sort((a, b) => {
+                const aY = parseInt(String(a.key).split("_")[5]);
+                const bY = parseInt(String(b.key).split("_")[5]);
+                return aY - bY;
+              });
+            }
+          });
+        }
+      });
+
+      return newData;
+    });
+  };
+
+  /**
    * 渲染树节点标题
    * @param node 树节点
    * @returns 渲染后的树节点标题
@@ -323,7 +416,11 @@ export default function FolderTree() {
                 <Button type="primary" onClick={addRootFolder}>
                   新增文件夹
                 </Button>
-                <TileUploader selectedKeys={selectedKeys} treeData={treeData} />
+                <TileUploader
+                  selectedKeys={selectedKeys}
+                  treeData={treeData}
+                  onUploadSuccess={updateTreeDataAfterUpload}
+                />
               </Space>
               <div>
                 <Tree
