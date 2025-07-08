@@ -1,15 +1,19 @@
 "use client";
 
-import { Tree, Card, Button, Space, Input } from "antd";
+import { Tree, Card, Button, Space, Input, message } from "antd";
 import { useState, useRef, useEffect } from "react";
 import type { TreeDataNode } from "antd";
 
 export default function Home() {
+  const [messageApi, contextHolder] = message.useMessage();
   const [treeData, setTreeData] = useState<TreeDataNode[]>([]);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState<string>("");
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
+  const [editingParentKey, setEditingParentKey] = useState<React.Key | null>(
+    null
+  ); // 新增：记录正在编辑节点的父级key
   const containerRef = useRef<HTMLDivElement>(null);
 
   // 监听点击事件，点击容器外部时取消选择
@@ -139,6 +143,46 @@ export default function Home() {
   };
 
   /**
+   * 检查同一层级下是否存在相同名称的文件夹
+   * @param nodes 树节点数组
+   * @param parentKey 父级节点key，null表示根目录
+   * @param targetName 要检查的名称
+   * @param excludeKey 要排除的节点key（当前正在编辑的节点）
+   * @returns 是否存在重复名称
+   */
+  const checkDuplicateName = (
+    nodes: TreeDataNode[],
+    parentKey: React.Key | null,
+    targetName: string,
+    excludeKey: React.Key
+  ): boolean => {
+    if (parentKey === null) {
+      // 检查根目录
+      return nodes.some(
+        (node) => node.key !== excludeKey && node.title === targetName
+      );
+    } else {
+      // 递归查找父级节点并检查其子节点
+      const findParentAndCheck = (nodeList: TreeDataNode[]): boolean => {
+        for (const node of nodeList) {
+          if (node.key === parentKey) {
+            // 找到父级节点，检查其子节点
+            return (node.children || []).some(
+              (child) => child.key !== excludeKey && child.title === targetName
+            );
+          } else if (node.children && node.children.length > 0) {
+            // 递归查找
+            const result = findParentAndCheck(node.children);
+            if (result) return true;
+          }
+        }
+        return false;
+      };
+      return findParentAndCheck(nodes);
+    }
+  };
+
+  /**
    * 新增文件夹
    */
   const addRootFolder = () => {
@@ -159,9 +203,11 @@ export default function Home() {
       );
       // 展开父文件夹
       setExpandedKeys((prevExpanded) => [...prevExpanded, selectedKey]);
+      setEditingParentKey(selectedKey); // 记录父级key
     } else {
       // 在根目录新增文件夹
       setTreeData([...treeData, newFolder]);
+      setEditingParentKey(null); // 根目录的父级为null
     }
 
     setEditingKey(newFolderKey);
@@ -181,18 +227,33 @@ export default function Home() {
    */
   const handleInputBlur = () => {
     if (editingValue.trim()) {
-      // 确认新增 - 更新文件夹名称
-      setTreeData((prevData) =>
-        updateTreeNodeTitle(prevData, editingKey!, editingValue.trim())
+      // 检查同一层级下是否存在相同名称的文件夹
+      const isDuplicate = checkDuplicateName(
+        treeData,
+        editingParentKey,
+        editingValue.trim(),
+        editingKey!
       );
-      // 确认新增后选中该文件夹
-      setSelectedKeys([editingKey!]);
+
+      if (isDuplicate) {
+        // 存在重复名称，取消新增
+        setTreeData((prevData) => removeTreeNode(prevData, editingKey!));
+        messageApi.error("文件夹名称重复，请使用其他名称");
+      } else {
+        // 确认新增 - 更新文件夹名称
+        setTreeData((prevData) =>
+          updateTreeNodeTitle(prevData, editingKey!, editingValue.trim())
+        );
+        // 确认新增后选中该文件夹
+        setSelectedKeys([editingKey!]);
+      }
     } else {
       // 取消新增 - 删除该文件夹
       setTreeData((prevData) => removeTreeNode(prevData, editingKey!));
     }
     setEditingKey(null);
     setEditingValue("");
+    setEditingParentKey(null); // 清除父级key记录
   };
 
   /**
@@ -227,26 +288,29 @@ export default function Home() {
   };
 
   return (
-    <div className="p-4 inline-block">
-      <Card>
-        <div ref={containerRef}>
-          <Space direction="vertical">
-            <Button type="primary" onClick={addRootFolder}>
-              新增文件夹
-            </Button>
-            <div>
-              <Tree
-                treeData={treeData}
-                selectedKeys={selectedKeys}
-                expandedKeys={expandedKeys}
-                onSelect={onSelect}
-                onExpand={onExpand}
-                titleRender={titleRender}
-              />
-            </div>
-          </Space>
-        </div>
-      </Card>
-    </div>
+    <>
+      {contextHolder}
+      <div className="p-4 inline-block">
+        <Card>
+          <div ref={containerRef}>
+            <Space direction="vertical">
+              <Button type="primary" onClick={addRootFolder}>
+                新增文件夹
+              </Button>
+              <div>
+                <Tree
+                  treeData={treeData}
+                  selectedKeys={selectedKeys}
+                  expandedKeys={expandedKeys}
+                  onSelect={onSelect}
+                  onExpand={onExpand}
+                  titleRender={titleRender}
+                />
+              </div>
+            </Space>
+          </div>
+        </Card>
+      </div>
+    </>
   );
 }
