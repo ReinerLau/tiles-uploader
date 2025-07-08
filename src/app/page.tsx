@@ -227,7 +227,7 @@ export default function Home() {
   };
 
   return (
-    <div style={{ padding: "24px" }}>
+    <div className="p-4 inline-block">
       <Card>
         <div ref={containerRef}>
           <Space direction="vertical">
