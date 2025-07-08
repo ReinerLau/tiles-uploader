@@ -100,7 +100,7 @@ export default function Home() {
    * @param node 树节点
    * @returns 渲染后的树节点标题
    */
-  const renderTreeTitle = (node: TreeDataNode) => {
+  const titleRender = (node: TreeDataNode): React.ReactNode => {
     if (editingKey === node.key) {
       return (
         <Input
@@ -110,21 +110,11 @@ export default function Home() {
           onKeyDown={handleInputKeyDown}
           autoFocus
           size="small"
-          style={{ width: "150px" }}
         />
       );
     }
-    return node.title;
+    return typeof node.title === "function" ? node.title(node) : node.title;
   };
-
-  /**
-   * 处理树数据
-   * @returns 处理后的树数据
-   */
-  const processedTreeData = treeData.map((node) => ({
-    ...node,
-    title: renderTreeTitle(node),
-  }));
 
   return (
     <div style={{ padding: "24px" }}>
@@ -134,9 +124,10 @@ export default function Home() {
             新增文件夹
           </Button>
           <Tree
-            treeData={processedTreeData}
+            treeData={treeData}
             onSelect={onSelect}
             onExpand={onExpand}
+            titleRender={titleRender}
           />
         </Space>
       </Card>
