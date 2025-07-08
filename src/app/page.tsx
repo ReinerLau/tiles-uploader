@@ -4,13 +4,8 @@ import { Tree, Card, Button, Space } from "antd";
 import { useState } from "react";
 import type { TreeDataNode } from "antd";
 
-/**
- * 文件夹结构数据
- */
-const initialTreeData: TreeDataNode[] = [];
-
 export default function Home() {
-  const [treeData, setTreeData] = useState<TreeDataNode[]>(initialTreeData);
+  const [treeData, setTreeData] = useState<TreeDataNode[]>([]);
 
   const onSelect = (
     selectedKeys: React.Key[],
