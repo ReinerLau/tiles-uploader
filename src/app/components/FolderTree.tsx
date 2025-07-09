@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from "react";
 import type { TreeDataNode } from "antd";
 import TileUploader from "./TileUploader";
 import TileDeleter from "./TileDeleter";
+import FolderUploader from "./FolderUploader";
 import {
   addTileToTree,
   removeTilesFromTree,
@@ -414,6 +415,20 @@ export default function FolderTree() {
   };
 
   /**
+   * 更新树形数据 - 在文件夹上传成功后调用
+   * @param newTileDataList 新的瓦片数据数组
+   */
+  const updateTreeDataAfterFolderUpload = (newTileDataList: TileData[]) => {
+    setTreeData((prevData) => {
+      let updatedData = prevData;
+      for (const tileData of newTileDataList) {
+        updatedData = addTileToTree(updatedData, tileData);
+      }
+      return updatedData;
+    });
+  };
+
+  /**
    * 渲染树节点标题
    * @param node 树节点
    * @returns 渲染后的树节点标题
@@ -455,6 +470,9 @@ export default function FolderTree() {
                   selectedKeys={selectedKeys}
                   treeData={treeData}
                   onUploadSuccess={updateTreeDataAfterUpload}
+                />
+                <FolderUploader
+                  onUploadSuccess={updateTreeDataAfterFolderUpload}
                 />
                 <TileDeleter
                   checkedKeys={checkedKeys}
