@@ -452,6 +452,8 @@ export default function FolderTree() {
     return typeof node.title === "function" ? node.title(node) : node.title;
   };
 
+  const isAddFolderDisabled = editingKey !== null;
+
   return (
     <>
       {contextHolder}
@@ -460,7 +462,11 @@ export default function FolderTree() {
           <div ref={containerRef}>
             <Space direction="vertical">
               <Space>
-                <Button type="primary" onClick={addRootFolder}>
+                <Button
+                  type="primary"
+                  onClick={addRootFolder}
+                  disabled={isAddFolderDisabled}
+                >
                   新增文件夹
                 </Button>
                 <TileUploader
