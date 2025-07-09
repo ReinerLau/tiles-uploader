@@ -132,9 +132,13 @@ export default function TileUploader({
         throw new Error("文件夹名称和文件名必须是有效的数字");
       }
 
-      // 发送请求到后端 API
+      // 将文件流作为请求体发送到后端 API
       const response = await fetch(`/tile/${z}/${x}/${y}`, {
         method: "POST",
+        headers: {
+          "Content-Type": "image/jpeg",
+        },
+        body: file as File,
       });
 
       if (!response.ok) {

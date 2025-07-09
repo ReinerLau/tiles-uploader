@@ -28,6 +28,12 @@ interface MinIOConfig {
    * 默认: https://hub.docker.com/r/bitnami/minio, MINIO_ROOT_PASSWORD 变量
    */
   secretKey: string;
+  /**
+   * 是否使用 SSL
+   * 可选
+   * 默认 false (适配本地开发环境)
+   */
+  useSSL: boolean;
 }
 
 /**
@@ -41,6 +47,7 @@ const defaultConfig: MinIOConfig = {
   port: process.env.MINIO_PORT ? parseInt(process.env.MINIO_PORT) : 9000,
   accessKey: process.env.MINIO_ACCESS_KEY || "minio",
   secretKey: process.env.MINIO_SECRET_KEY || "miniosecret",
+  useSSL: process.env.MINIO_USE_SSL === "true", // 明确设置为 false，除非环境变量明确设置为 "true"
 };
 
 /**

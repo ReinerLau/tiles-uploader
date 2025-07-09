@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/app/utils/prisma";
+import { uploadFileStream } from "@/app/utils/minio";
 
 /**
  * GET /tile/{z}/{x}/{y}
@@ -10,7 +11,7 @@ export async function GET(
   { params }: { params: { slug: string[] } }
 ) {
   try {
-    const { slug } = params;
+    const { slug } = await params;
 
     // 解析路径参数
     const z = slug[0];
@@ -55,14 +56,14 @@ export async function GET(
 
 /**
  * POST /tile/{z}/{x}/{y}
- * 创建瓦片文件信息记录
+ * 上传瓦片文件并创建记录
  */
 export async function POST(
   request: NextRequest,
   { params }: { params: { slug: string[] } }
 ) {
   try {
-    const { slug } = params;
+    const { slug } = await params;
 
     // 从路径中提取 z、x、y 参数
     const z = slug[0];
@@ -76,9 +77,6 @@ export async function POST(
         { status: 400 }
       );
     }
-
-    // 可以解析请求体，但不需要验证任何字段
-    // 所有必需的参数都从路径中获取
 
     // 验证参数是否为有效数字格式
     if (!/^\d+$/.test(z) || !/^\d+$/.test(x) || !/^\d+$/.test(y)) {
@@ -108,6 +106,26 @@ export async function POST(
       );
     }
 
+    // 获取请求体中的文件流
+    const fileBuffer = await request.arrayBuffer();
+    const buffer = Buffer.from(fileBuffer);
+
+    // 上传文件到 MinIO
+    const uploadResult = await uploadFileStream(buffer, {
+      fileName: fileName,
+      contentType: "image/jpeg",
+    });
+
+    if (!uploadResult.success) {
+      return NextResponse.json(
+        {
+          error: "文件上传失败",
+          details: uploadResult.error,
+        },
+        { status: 500 }
+      );
+    }
+
     // 创建瓦片记录
     const tile = await prisma.tile.create({
       data: {
@@ -123,7 +141,11 @@ export async function POST(
       {
         success: true,
         data: tile,
-        message: "瓦片记录创建成功",
+        message: "瓦片文件上传并记录创建成功",
+        uploadInfo: {
+          etag: uploadResult.etag,
+          versionId: uploadResult.versionId,
+        },
       },
       { status: 201 }
     );
