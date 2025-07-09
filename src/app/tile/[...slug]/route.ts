@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/app/utils/prisma";
-import { uploadFileStream } from "@/app/utils/minio";
+import { uploadFileStream, deleteFile } from "@/app/utils/minio";
 
 /**
  * GET /tile/{z}/{x}/{y}
@@ -243,6 +243,22 @@ export async function DELETE(
       );
     }
 
+    // 删除 MinIO 中的文件
+    const deleteErrors: string[] = [];
+    for (const tile of existingTiles) {
+      const deleteResult = await deleteFile(tile.fileName);
+      if (!deleteResult.success) {
+        deleteErrors.push(
+          `删除文件 ${tile.fileName} 失败: ${deleteResult.error}`
+        );
+      }
+    }
+
+    // 如果有文件删除失败，记录错误但继续删除数据库记录
+    if (deleteErrors.length > 0) {
+      console.warn("部分文件删除失败:", deleteErrors);
+    }
+
     // 删除瓦片记录
     const deleteResult = await prisma.tile.deleteMany({
       where,
@@ -259,8 +275,15 @@ export async function DELETE(
         deletedTiles: existingTiles,
         path: pathStr,
         type: deletionType,
+        fileDeleteErrors: deleteErrors.length > 0 ? deleteErrors : undefined,
       },
-      message: `${deletionType}删除成功，共删除 ${deleteResult.count} 个瓦片记录`,
+      message: `${deletionType}删除成功，共删除 ${
+        deleteResult.count
+      } 个瓦片记录${
+        deleteErrors.length > 0
+          ? `，但有 ${deleteErrors.length} 个文件删除失败`
+          : "，所有相关文件已删除"
+      }`,
     });
   } catch (error) {
     console.error("删除瓦片记录失败:", error);

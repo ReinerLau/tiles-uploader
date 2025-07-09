@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/app/utils/prisma";
 import { buildTreeFromTiles, type TileData } from "@/app/utils/treeUtils";
+import { deleteFile } from "@/app/utils/minio";
 
 // 定义瓦片记录类型
 interface TileRecord {
@@ -88,6 +89,7 @@ export async function DELETE(request: Request) {
 
     const tilesToDelete: TileRecord[] = [];
     const deletionSummary: string[] = [];
+    const deleteErrors: string[] = [];
 
     // 处理坐标删除
     for (const coord of coordinates) {
@@ -129,6 +131,17 @@ export async function DELETE(request: Request) {
       });
 
       if (coordTiles.length > 0) {
+        // 删除 MinIO 中的文件
+        for (const tile of coordTiles) {
+          const deleteResult = await deleteFile(tile.fileName);
+          if (!deleteResult.success) {
+            deleteErrors.push(
+              `删除文件 ${tile.fileName} 失败: ${deleteResult.error}`
+            );
+          }
+        }
+
+        // 删除数据库记录
         await prisma.tile.deleteMany({
           where,
         });
@@ -148,6 +161,11 @@ export async function DELETE(request: Request) {
       }
     }
 
+    // 如果有文件删除失败，记录错误
+    if (deleteErrors.length > 0) {
+      console.warn("部分文件删除失败:", deleteErrors);
+    }
+
     if (tilesToDelete.length === 0) {
       return NextResponse.json(
         {
@@ -164,8 +182,13 @@ export async function DELETE(request: Request) {
         deletedCount: tilesToDelete.length,
         deletedTiles: tilesToDelete,
         deletionSummary,
+        fileDeleteErrors: deleteErrors.length > 0 ? deleteErrors : undefined,
       },
-      message: `批量删除成功，共删除 ${tilesToDelete.length} 个瓦片记录`,
+      message: `批量删除成功，共删除 ${tilesToDelete.length} 个瓦片记录${
+        deleteErrors.length > 0
+          ? `，但有 ${deleteErrors.length} 个文件删除失败`
+          : "，所有相关文件已删除"
+      }`,
     });
   } catch (error) {
     console.error("批量删除瓦片记录失败:", error);
