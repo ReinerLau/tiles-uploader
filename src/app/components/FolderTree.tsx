@@ -1,6 +1,6 @@
 "use client";
 
-import { Tree, Card, Space, message } from "antd";
+import { Tree, Card, Space, message, Button } from "antd";
 import { useState, useRef, useEffect } from "react";
 import type { TreeDataNode } from "antd";
 import TileUploader from "./TileUploader";
@@ -12,9 +12,15 @@ import {
   type TileData,
 } from "@/app/utils/treeUtils";
 
+// 扩展树节点类型，添加瓦片相关属性
+interface ExtendedTreeDataNode extends TreeDataNode {
+  tileId?: string;
+  fileName?: string;
+}
+
 export default function FolderTree() {
   const [messageApi, contextHolder] = message.useMessage();
-  const [treeData, setTreeData] = useState<TreeDataNode[]>([]);
+  const [treeData, setTreeData] = useState<ExtendedTreeDataNode[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
   const [checkedKeys, setCheckedKeys] = useState<React.Key[]>([]);
@@ -59,6 +65,40 @@ export default function FolderTree() {
   }, []);
 
   /**
+   * 自定义节点标题渲染
+   * @param nodeData 节点数据
+   * @returns 渲染的节点标题
+   */
+  const titleRender = (nodeData: ExtendedTreeDataNode): React.ReactNode => {
+    // 检查是否为叶子节点且有瓦片信息
+    if (nodeData.isLeaf && nodeData.tileId && nodeData.fileName) {
+      // 为叶子节点渲染链接按钮
+      return (
+        <Button
+          type="link"
+          size="small"
+          style={{ padding: 0, height: "auto" }}
+          onClick={(e) => {
+            e.stopPropagation();
+            // 这里可以添加点击链接的逻辑，比如下载文件或查看详情
+            console.log("点击瓦片链接:", nodeData.tileId, nodeData.fileName);
+            messageApi.info(`点击了瓦片: ${nodeData.fileName}`);
+          }}
+        >
+          {typeof nodeData.title === "string"
+            ? nodeData.title
+            : String(nodeData.title)}
+        </Button>
+      );
+    }
+
+    // 非叶子节点正常显示
+    return typeof nodeData.title === "function"
+      ? nodeData.title(nodeData)
+      : nodeData.title;
+  };
+
+  /**
    * 选中文件/文件夹
    * @param selectedKeys 选中文件/文件夹的key
    * @param info 选中文件/文件夹的信息
@@ -66,9 +106,9 @@ export default function FolderTree() {
   const onSelect = (
     selectedKeys: React.Key[],
     info: {
-      node: TreeDataNode;
+      node: ExtendedTreeDataNode;
       selected: boolean;
-      selectedNodes: TreeDataNode[];
+      selectedNodes: ExtendedTreeDataNode[];
     }
   ) => {
     console.log("选中的文件/文件夹:", selectedKeys, info);
@@ -82,7 +122,7 @@ export default function FolderTree() {
    */
   const onExpand = (
     expandedKeys: React.Key[],
-    info: { node: TreeDataNode; expanded: boolean }
+    info: { node: ExtendedTreeDataNode; expanded: boolean }
   ) => {
     console.log("展开的文件夹:", expandedKeys, info);
     setExpandedKeys(expandedKeys);
@@ -110,7 +150,7 @@ export default function FolderTree() {
    */
   const updateTreeDataAfterUpload = (newTileData: TileData) => {
     setTreeData((prevData) => {
-      return addTileToTree(prevData, newTileData);
+      return addTileToTree(prevData, newTileData) as ExtendedTreeDataNode[];
     });
   };
 
@@ -120,7 +160,10 @@ export default function FolderTree() {
    */
   const updateTreeDataAfterDelete = (deletedTiles: TileData[]) => {
     setTreeData((prevData) => {
-      return removeTilesFromTree(prevData, deletedTiles);
+      return removeTilesFromTree(
+        prevData,
+        deletedTiles
+      ) as ExtendedTreeDataNode[];
     });
     // 删除成功后清空复选框选中状态
     setCheckedKeys([]);
@@ -134,7 +177,10 @@ export default function FolderTree() {
     setTreeData((prevData) => {
       let updatedData = prevData;
       for (const tileData of newTileDataList) {
-        updatedData = addTileToTree(updatedData, tileData);
+        updatedData = addTileToTree(
+          updatedData,
+          tileData
+        ) as ExtendedTreeDataNode[];
       }
       return updatedData;
     });
@@ -171,6 +217,7 @@ export default function FolderTree() {
                   onSelect={onSelect}
                   onExpand={onExpand}
                   onCheck={onCheck}
+                  titleRender={titleRender}
                 />
               </div>
             </Space>
