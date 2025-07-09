@@ -18,6 +18,7 @@ export default function FolderTree() {
   const [editingValue, setEditingValue] = useState<string>("");
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
+  const [checkedKeys, setCheckedKeys] = useState<React.Key[]>([]); // 新增：复选框选中的key
   const [editingParentKey, setEditingParentKey] = useState<React.Key | null>(
     null
   ); // 新增：记录正在编辑节点的父级key
@@ -92,6 +93,37 @@ export default function FolderTree() {
     setExpandedKeys(expandedKeys);
     // 切换文件夹展开状态时选中该文件夹
     setSelectedKeys([info.node.key]);
+  };
+
+  /**
+   * 复选框选中状态改变
+   * @param checkedKeys 选中的key数组
+   * @param info 选中状态信息
+   */
+  const onCheck = (
+    checkedKeys:
+      | React.Key[]
+      | { checked: React.Key[]; halfChecked: React.Key[] },
+    info: {
+      event: "check";
+      node: TreeDataNode;
+      checked: boolean;
+      nativeEvent: MouseEvent;
+      checkedNodes: TreeDataNode[];
+      checkedNodesPositions?: { node: TreeDataNode; pos: string }[];
+      halfCheckedKeys?: React.Key[];
+    }
+  ) => {
+    const keys = Array.isArray(checkedKeys) ? checkedKeys : checkedKeys.checked;
+    setCheckedKeys(keys);
+    console.log("复选框选中的项:", keys, info);
+
+    // 可以在这里添加自定义的处理逻辑
+    if (info.checked) {
+      messageApi.info(`选中了: ${info.node.title}`);
+    } else {
+      messageApi.info(`取消选中: ${info.node.title}`);
+    }
   };
 
   /**
@@ -395,6 +427,8 @@ export default function FolderTree() {
     setTreeData((prevData) => {
       return removeTilesFromTree(prevData, deletedTiles);
     });
+    // 删除成功后清空复选框选中状态
+    setCheckedKeys([]);
   };
 
   /**
@@ -435,18 +469,20 @@ export default function FolderTree() {
                   onUploadSuccess={updateTreeDataAfterUpload}
                 />
                 <TileDeleter
-                  selectedKeys={selectedKeys}
-                  treeData={treeData}
+                  checkedKeys={checkedKeys}
                   onDeleteSuccess={updateTreeDataAfterDelete}
                 />
               </Space>
               <div>
                 <Tree
+                  checkable
                   treeData={treeData}
                   selectedKeys={selectedKeys}
                   expandedKeys={expandedKeys}
+                  checkedKeys={checkedKeys}
                   onSelect={onSelect}
                   onExpand={onExpand}
+                  onCheck={onCheck}
                   titleRender={titleRender}
                 />
               </div>
