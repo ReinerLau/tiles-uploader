@@ -22,6 +22,7 @@ export interface TreeNode {
   isLeaf?: boolean;
   tileId?: string;
   fileName?: string;
+  selectable?: boolean;
 }
 
 /**
@@ -127,6 +128,7 @@ export function buildTreeFromTiles(tiles: TileData[]): TreeNode[] {
       isLeaf: true,
       tileId: id,
       fileName: fileName,
+      selectable: false,
     };
     xNode.children!.push(yNode);
   });
@@ -186,6 +188,7 @@ export function addTileToTree(
     isLeaf: true,
     tileId: id,
     fileName: fileName,
+    selectable: false,
   };
 
   // 检查是否已存在相同的 y 节点
