@@ -166,6 +166,8 @@ export default function TileUploader({
     }
   };
 
+  const isDisabled = selectedKeys.length === 0;
+
   return (
     <>
       {contextHolder}
@@ -174,8 +176,9 @@ export default function TileUploader({
         customRequest={customRequest}
         showUploadList={false}
         accept=".jpg,.jpeg"
+        disabled={isDisabled}
       >
-        <Button>上传瓦片</Button>
+        <Button disabled={isDisabled}>上传瓦片</Button>
       </Upload>
     </>
   );
