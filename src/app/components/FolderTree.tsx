@@ -103,27 +103,10 @@ export default function FolderTree() {
   const onCheck = (
     checkedKeys:
       | React.Key[]
-      | { checked: React.Key[]; halfChecked: React.Key[] },
-    info: {
-      event: "check";
-      node: TreeDataNode;
-      checked: boolean;
-      nativeEvent: MouseEvent;
-      checkedNodes: TreeDataNode[];
-      checkedNodesPositions?: { node: TreeDataNode; pos: string }[];
-      halfCheckedKeys?: React.Key[];
-    }
+      | { checked: React.Key[]; halfChecked: React.Key[] }
   ) => {
     const keys = Array.isArray(checkedKeys) ? checkedKeys : checkedKeys.checked;
     setCheckedKeys(keys);
-    console.log("复选框选中的项:", keys, info);
-
-    // 可以在这里添加自定义的处理逻辑
-    if (info.checked) {
-      messageApi.info(`选中了: ${info.node.title}`);
-    } else {
-      messageApi.info(`取消选中: ${info.node.title}`);
-    }
   };
 
   /**
