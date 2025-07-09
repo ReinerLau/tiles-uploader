@@ -33,7 +33,6 @@ export default function FolderTree() {
 
         if (result.success) {
           setTreeData(result.data);
-          messageApi.success(`加载了 ${result.count} 个瓦片数据`);
         } else {
           messageApi.error(result.error || "获取瓦片数据失败");
         }
