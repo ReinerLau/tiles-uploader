@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/app/utils/prisma";
-import { uploadFileStream, deleteFile, getFileUrl } from "@/app/utils/minio";
+import { uploadFileStream, deleteFile, getFileStream } from "@/app/utils/minio";
 
 /**
  * GET /tile/{z}/{x}/{y}
- * 获取单个瓦片记录
+ * 获取瓦片文件流
  */
 export async function GET(
   request: NextRequest,
@@ -54,41 +54,52 @@ export async function GET(
       );
     }
 
-    // 为瓦片生成预签名 URL
-    try {
-      const presignedUrl = await getFileUrl(`${tile.fileName}.jpg`);
-      const tileWithUrl = {
-        ...tile,
-        presignedUrl,
-      };
+    // 获取文件流
+    const fileStreamResult = await getFileStream(`${tile.fileName}.jpg`);
 
-      return NextResponse.json({
-        success: true,
-        data: tileWithUrl,
-        message: "获取瓦片记录成功",
-      });
-    } catch (error) {
-      console.error(`生成预签名 URL 失败 (${tile.fileName}):`, error);
-
-      // 即使URL生成失败，也返回瓦片记录，只是不包含URL
-      const tileWithError = {
-        ...tile,
-        presignedUrl: null,
-        urlError: error instanceof Error ? error.message : "未知错误",
-      };
-
-      return NextResponse.json({
-        success: true,
-        data: tileWithError,
-        message: "获取瓦片记录成功，但生成下载链接失败",
-      });
+    if (!fileStreamResult.success || !fileStreamResult.stream) {
+      return NextResponse.json(
+        {
+          error: "获取文件流失败",
+          details: fileStreamResult.error || "未知错误",
+        },
+        { status: 500 }
+      );
     }
+
+    // 将文件流转换为 Response
+    const stream = fileStreamResult.stream;
+
+    // 创建 ReadableStream 适配器
+    const readableStream = new ReadableStream({
+      start(controller) {
+        stream.on("data", (chunk) => {
+          controller.enqueue(new Uint8Array(chunk));
+        });
+
+        stream.on("end", () => {
+          controller.close();
+        });
+
+        stream.on("error", (error) => {
+          controller.error(error);
+        });
+      },
+    });
+
+    // 返回文件流响应
+    return new Response(readableStream, {
+      headers: {
+        "Content-Type": "image/jpeg",
+        "Cache-Control": "public, max-age=3600", // 缓存1小时
+      },
+    });
   } catch (error) {
-    console.error("获取瓦片记录失败:", error);
+    console.error("获取瓦片文件失败:", error);
 
     return NextResponse.json(
       {
-        error: "获取瓦片记录失败",
+        error: "获取瓦片文件失败",
         details: error instanceof Error ? error.message : "未知错误",
       },
       { status: 500 }

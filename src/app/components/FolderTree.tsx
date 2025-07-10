@@ -78,7 +78,7 @@ export default function FolderTree() {
   }, []);
 
   /**
-   * 获取瓦片预签名 URL 并显示预览
+   * 获取瓦片图片并显示预览
    * @param fileName 瓦片文件名
    */
   const handleTilePreview = async (fileName: string) => {
@@ -91,26 +91,15 @@ export default function FolderTree() {
 
       const [z, x, y] = parts;
 
-      // 调用 GET 路由获取预签名 URL
-      const response = await fetch(`/tile/${z}/${x}/${y}`);
+      // 直接使用 API 端点作为图片源
+      const imageUrl = `/tile/${z}/${x}/${y}`;
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "获取图片失败");
-      }
-
-      const result = await response.json();
-
-      if (result.success && result.data.presignedUrl) {
-        // 显示图片预览
-        setPreviewImage({
-          visible: true,
-          src: result.data.presignedUrl,
-          alt: `瓦片 ${fileName} (${z}/${x}/${y})`,
-        });
-      } else {
-        throw new Error(result.data?.urlError || "获取图片链接失败");
-      }
+      // 显示图片预览
+      setPreviewImage({
+        visible: true,
+        src: imageUrl,
+        alt: `瓦片 ${fileName} (${z}/${x}/${y})`,
+      });
     } catch (error) {
       console.error("获取瓦片预览失败:", error);
       messageApi.error(

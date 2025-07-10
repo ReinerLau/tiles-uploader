@@ -298,3 +298,41 @@ export async function listFiles(
     };
   }
 }
+
+/**
+ * 获取文件流
+ * @param objectName 对象名称
+ * @returns 文件流
+ */
+export async function getFileStream(objectName: string): Promise<{
+  success: boolean;
+  stream?: Readable;
+  error?: string;
+}> {
+  try {
+    const client = getMinIOClient();
+
+    // 首先检查文件是否存在
+    const exists = await fileExists(objectName);
+    if (!exists) {
+      return {
+        success: false,
+        error: `文件不存在: ${objectName}`,
+      };
+    }
+
+    // 获取文件流
+    const stream = await client.getObject(BUCKET_NAME, objectName);
+
+    return {
+      success: true,
+      stream,
+    };
+  } catch (error) {
+    console.error("获取文件流失败:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "未知错误",
+    };
+  }
+}
