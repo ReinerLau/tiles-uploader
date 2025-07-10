@@ -57,10 +57,6 @@ export default function FolderUploader({
    */
   const totalFilesRef = useRef(0);
   /**
-   * 完成上传的文件数
-   */
-  const completedFilesRef = useRef(0);
-  /**
    * 是否是第一个文件
    */
   const isFirstFile = useRef(true);
@@ -106,7 +102,7 @@ export default function FolderUploader({
       const currentPercent =
         totalFilesRef.current > 0
           ? Math.round(
-              (completedFilesRef.current / totalFilesRef.current) * 100
+              (uploadedTilesRef.current.length / totalFilesRef.current) * 100
             )
           : 0;
       onProgressChange?.({
@@ -154,11 +150,10 @@ export default function FolderUploader({
         }
 
         // 更新完成文件数和进度
-        completedFilesRef.current += 1;
         const updatedPercent =
           totalFilesRef.current > 0
             ? Math.round(
-                (completedFilesRef.current / totalFilesRef.current) * 100
+                (uploadedTilesRef.current.length / totalFilesRef.current) * 100
               )
             : 0;
         onProgressChange?.({
@@ -186,7 +181,6 @@ export default function FolderUploader({
     }
 
     setIsUploading(true);
-    completedFilesRef.current = 0;
 
     try {
       while (uploadQueueRef.current.length > 0) {
@@ -213,7 +207,6 @@ export default function FolderUploader({
       setIsUploading(false);
       // 重置计数器
       totalFilesRef.current = 0;
-      completedFilesRef.current = 0;
       isFirstFile.current = true;
     }
   };
@@ -254,7 +247,6 @@ export default function FolderUploader({
     if (isFirstFile.current) {
       isFirstFile.current = false;
       totalFilesRef.current = fileList.length;
-      completedFilesRef.current = 0;
       onProgressChange?.({
         isUploading: false,
         percent: 0,
