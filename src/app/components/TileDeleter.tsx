@@ -2,6 +2,7 @@
 
 import { Button, message, Modal } from "antd";
 import type { TileData } from "@/app/utils/treeUtils";
+import { useState } from "react";
 
 /**
  * 瓦片删除组件的属性
@@ -32,6 +33,7 @@ export default function TileDeleter({
 }: TileDeleterProps) {
   const [messageApi, contextHolder] = message.useMessage();
   const [modal, modalContextHolder] = Modal.useModal();
+  const [isDeleting, setIsDeleting] = useState(false);
 
   /**
    * 解析节点key获取坐标信息
@@ -113,6 +115,7 @@ export default function TileDeleter({
    * 删除瓦片记录
    */
   const handleDelete = async () => {
+    setIsDeleting(true);
     try {
       // 检查是否选中了有效节点
       if (checkedKeys.length === 0) {
@@ -190,6 +193,8 @@ export default function TileDeleter({
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "删除失败";
       messageApi.error(errorMessage);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -230,14 +235,19 @@ export default function TileDeleter({
     });
   };
 
-  const isDisabled = checkedKeys.length === 0;
+  const isDisabled = checkedKeys.length === 0 || isDeleting;
 
   return (
     <>
       {contextHolder}
       {modalContextHolder}
-      <Button danger onClick={showDeleteConfirm} disabled={isDisabled}>
-        删除
+      <Button
+        danger
+        onClick={showDeleteConfirm}
+        disabled={isDisabled}
+        loading={isDeleting}
+      >
+        {isDeleting ? "删除中..." : "删除"}
       </Button>
     </>
   );

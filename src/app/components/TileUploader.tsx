@@ -3,6 +3,7 @@
 import { Button, Upload, message } from "antd";
 import type { TreeDataNode, UploadFile, UploadProps } from "antd";
 import type { TileData } from "@/app/utils/treeUtils";
+import { useState } from "react";
 
 /**
  * 瓦片上传组件的属性
@@ -28,6 +29,7 @@ export default function TileUploader({
   onUploadSuccess,
 }: TileUploaderProps) {
   const [messageApi, contextHolder] = message.useMessage();
+  const [isUploading, setIsUploading] = useState(false);
 
   /**
    * 获取节点的完整路径
@@ -110,6 +112,7 @@ export default function TileUploader({
   const customRequest: UploadProps["customRequest"] = async (options) => {
     const { file, onSuccess, onError } = options;
 
+    setIsUploading(true);
     try {
       // 获取选中节点的路径
       const selectedKey = selectedKeys[0];
@@ -167,10 +170,12 @@ export default function TileUploader({
       const errorMessage = error instanceof Error ? error.message : "上传失败";
       messageApi.error(errorMessage);
       onError?.(error as Error);
+    } finally {
+      setIsUploading(false);
     }
   };
 
-  const isDisabled = selectedKeys.length === 0;
+  const isDisabled = selectedKeys.length === 0 || isUploading;
 
   return (
     <>
@@ -182,7 +187,9 @@ export default function TileUploader({
         accept=".jpg,.jpeg"
         disabled={isDisabled}
       >
-        <Button disabled={isDisabled}>上传瓦片</Button>
+        <Button disabled={isDisabled} loading={isUploading}>
+          {isUploading ? "上传中..." : "上传瓦片"}
+        </Button>
       </Upload>
     </>
   );
