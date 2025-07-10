@@ -197,7 +197,7 @@ export default function FolderTree() {
   };
 
   /**
-   * 更新树形数据 - 在瓦片上传成功后调用
+   * 更新树形数据 - 在瓦片上传成功后调用（支持单个瓦片和文件夹上传）
    * @param newTileDataList 新的瓦片数据数组
    */
   const updateTreeDataAfterUpload = (newTileDataList: TileData[]) => {
@@ -229,23 +229,6 @@ export default function FolderTree() {
   };
 
   /**
-   * 更新树形数据 - 在文件夹上传成功后调用
-   * @param newTileDataList 新的瓦片数据数组
-   */
-  const updateTreeDataAfterFolderUpload = (newTileDataList: TileData[]) => {
-    setTreeData((prevData) => {
-      let updatedData = prevData;
-      for (const tileData of newTileDataList) {
-        updatedData = addTileToTree(
-          updatedData,
-          tileData
-        ) as ExtendedTreeDataNode[];
-      }
-      return updatedData;
-    });
-  };
-
-  /**
    * 处理上传进度变化
    * @param progress 上传进度信息
    */
@@ -271,7 +254,7 @@ export default function FolderTree() {
                   isUploading={isUploading}
                 />
                 <FolderUploader
-                  onUploadSuccess={updateTreeDataAfterFolderUpload}
+                  onUploadSuccess={updateTreeDataAfterUpload}
                   onProgressChange={handleUploadProgressChange}
                   isUploading={isUploading}
                 />
