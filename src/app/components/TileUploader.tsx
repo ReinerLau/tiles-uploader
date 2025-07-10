@@ -3,7 +3,7 @@
 import { Button, Upload, message } from "antd";
 import type { TreeDataNode, UploadFile, UploadProps } from "antd";
 import type { TileData } from "@/app/utils/treeUtils";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 
 /**
  * 上传进度信息接口
@@ -30,17 +30,13 @@ interface TileUploaderProps {
    */
   onUploadSuccess?: (newTileData: TileData[]) => void;
   /**
-   * 是否禁用上传
-   */
-  disabled?: boolean;
-  /**
-   * 上传状态变化的回调函数
-   */
-  onUploadStateChange?: (isUploading: boolean) => void;
-  /**
    * 上传进度变化的回调函数
    */
   onProgressChange?: (progress: UploadProgress) => void;
+  /**
+   * 是否正在上传（由父组件管理）
+   */
+  isUploading: boolean;
 }
 
 /**
@@ -59,11 +55,11 @@ export default function TileUploader({
   selectedKeys,
   treeData,
   onUploadSuccess,
-  onUploadStateChange,
   onProgressChange,
+  isUploading,
 }: TileUploaderProps) {
   const [messageApi, contextHolder] = message.useMessage();
-  const [isUploading, setIsUploading] = useState(false);
+  // 移除内部的 isUploading 状态，使用从父组件传递的状态
 
   /**
    * 上传队列
@@ -199,8 +195,11 @@ export default function TileUploader({
       return;
     }
 
-    setIsUploading(true);
-    onUploadStateChange?.(true);
+    // 通过 onProgressChange 通知开始上传
+    onProgressChange?.({
+      isUploading: true,
+      percent: 0,
+    });
 
     try {
       while (uploadQueueRef.current.length > 0) {
@@ -224,8 +223,11 @@ export default function TileUploader({
         percent: 100,
       });
     } finally {
-      setIsUploading(false);
-      onUploadStateChange?.(false);
+      // 确保上传状态被重置
+      onProgressChange?.({
+        isUploading: false,
+        percent: 100,
+      });
       // 重置计数器
       totalFilesRef.current = 0;
     }

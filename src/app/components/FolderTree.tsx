@@ -26,6 +26,8 @@ export default function FolderTree() {
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
   const [checkedKeys, setCheckedKeys] = useState<React.Key[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  // 添加全局上传状态管理
+  const [isUploading, setIsUploading] = useState<boolean>(false);
   const [previewImage, setPreviewImage] = useState<{
     visible: boolean;
     src: string;
@@ -249,6 +251,8 @@ export default function FolderTree() {
    */
   const handleUploadProgressChange = (progress: UploadProgress) => {
     setUploadProgress(progress);
+    // 同步全局上传状态
+    setIsUploading(progress.isUploading);
   };
 
   return (
@@ -264,10 +268,12 @@ export default function FolderTree() {
                   treeData={treeData}
                   onUploadSuccess={updateTreeDataAfterUpload}
                   onProgressChange={handleUploadProgressChange}
+                  isUploading={isUploading}
                 />
                 <FolderUploader
                   onUploadSuccess={updateTreeDataAfterFolderUpload}
                   onProgressChange={handleUploadProgressChange}
+                  isUploading={isUploading}
                 />
                 <TileDeleter
                   checkedKeys={checkedKeys}

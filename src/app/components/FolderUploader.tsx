@@ -3,7 +3,7 @@
 import { Button, Upload, message } from "antd";
 import type { UploadFile, UploadProps } from "antd";
 import type { TileData } from "@/app/utils/treeUtils";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 
 /**
  * 上传进度信息接口
@@ -25,6 +25,10 @@ interface FolderUploaderProps {
    * 上传进度变化的回调函数
    */
   onProgressChange?: (progress: UploadProgress) => void;
+  /**
+   * 是否正在上传（由父组件管理）
+   */
+  isUploading: boolean;
 }
 
 /**
@@ -40,9 +44,10 @@ interface UploadTask {
 export default function FolderUploader({
   onUploadSuccess,
   onProgressChange,
+  isUploading,
 }: FolderUploaderProps) {
   const [messageApi, contextHolder] = message.useMessage();
-  const [isUploading, setIsUploading] = useState(false);
+  // 移除内部的 isUploading 状态，使用从父组件传递的状态
   /**
    * 上传队列
    */
@@ -174,7 +179,11 @@ export default function FolderUploader({
       return;
     }
 
-    setIsUploading(true);
+    // 通过 onProgressChange 通知开始上传
+    onProgressChange?.({
+      isUploading: true,
+      percent: 0,
+    });
 
     try {
       while (uploadQueueRef.current.length > 0) {
@@ -198,7 +207,11 @@ export default function FolderUploader({
         percent: 100,
       });
     } finally {
-      setIsUploading(false);
+      // 确保上传状态被重置
+      onProgressChange?.({
+        isUploading: false,
+        percent: 100,
+      });
       // 重置计数器
       totalFilesRef.current = 0;
     }
@@ -298,7 +311,7 @@ export default function FolderUploader({
         multiple
         disabled={isUploading}
       >
-        <Button loading={isUploading}>
+        <Button loading={isUploading} disabled={isUploading}>
           {isUploading ? "上传中..." : "上传文件夹"}
         </Button>
       </Upload>
