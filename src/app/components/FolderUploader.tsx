@@ -47,10 +47,7 @@ export default function FolderUploader({
    * 上传队列
    */
   const uploadQueueRef = useRef<UploadTask[]>([]);
-  /**
-   * 是否正在处理上传队列
-   */
-  const isProcessingRef = useRef(false);
+
   /**
    * 上传成功的瓦片数据
    */
@@ -184,11 +181,10 @@ export default function FolderUploader({
    * 处理上传队列
    */
   const processUploadQueue = async (): Promise<void> => {
-    if (isProcessingRef.current || uploadQueueRef.current.length === 0) {
+    if (isUploading || uploadQueueRef.current.length === 0) {
       return;
     }
 
-    isProcessingRef.current = true;
     setIsUploading(true);
     completedFilesRef.current = 0;
 
@@ -214,7 +210,6 @@ export default function FolderUploader({
         percent: 100,
       });
     } finally {
-      isProcessingRef.current = false;
       setIsUploading(false);
       // 重置计数器
       totalFilesRef.current = 0;
