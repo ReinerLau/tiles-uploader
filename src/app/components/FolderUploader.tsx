@@ -131,8 +131,6 @@ export default function FolderUploader({
       const result = await response.json();
 
       if (result.success) {
-        messageApi.success(`文件上传成功！文件名：${result.data.fileName}`);
-
         // 收集上传成功的瓦片数据
         if (result.data) {
           const tileData: TileData = {
