@@ -148,7 +148,7 @@ export default function TileUploader({
 
       const result = await response.json();
 
-      messageApi.success(`文件上传成功！文件名：${result.data.fileName}`);
+      messageApi.success(`文件上传成功`);
 
       // 调用回调函数更新树形数据
       if (onUploadSuccess && result.data) {
