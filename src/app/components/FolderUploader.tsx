@@ -43,11 +43,29 @@ export default function FolderUploader({
 }: FolderUploaderProps) {
   const [messageApi, contextHolder] = message.useMessage();
   const [isUploading, setIsUploading] = useState(false);
+  /**
+   * 上传队列
+   */
   const uploadQueueRef = useRef<UploadTask[]>([]);
+  /**
+   * 是否正在处理上传队列
+   */
   const isProcessingRef = useRef(false);
+  /**
+   * 上传成功的瓦片数据
+   */
   const uploadedTilesRef = useRef<TileData[]>([]);
+  /**
+   * 总文件数
+   */
   const totalFilesRef = useRef(0);
+  /**
+   * 完成上传的文件数
+   */
   const completedFilesRef = useRef(0);
+  /**
+   * 是否是第一个文件
+   */
   const isFirstFile = useRef(true);
 
   /**
