@@ -3,6 +3,7 @@
 import { Button, Upload, message } from "antd";
 import type { UploadFile, UploadProps } from "antd";
 import type { TileData } from "@/app/utils/treeUtils";
+import { useRef, useState } from "react";
 
 /**
  * 文件夹上传组件的属性
@@ -14,10 +15,24 @@ interface FolderUploaderProps {
   onUploadSuccess?: (newTileData: TileData[]) => void;
 }
 
+/**
+ * 上传任务接口
+ */
+interface UploadTask {
+  file: File;
+  webkitRelativePath: string;
+  onSuccess?: (response: unknown) => void;
+  onError?: (error: Error) => void;
+}
+
 export default function FolderUploader({
   onUploadSuccess,
 }: FolderUploaderProps) {
   const [messageApi, contextHolder] = message.useMessage();
+  const [isUploading, setIsUploading] = useState(false);
+  const uploadQueueRef = useRef<UploadTask[]>([]);
+  const isProcessingRef = useRef(false);
+  const uploadedTilesRef = useRef<TileData[]>([]);
 
   /**
    * 解析文件路径，提取z、x、y参数
@@ -48,6 +63,94 @@ export default function FolderUploader({
     }
 
     return { z, x, y };
+  };
+
+  /**
+   * 处理单个文件上传
+   * @param task 上传任务
+   */
+  const processSingleUpload = async (task: UploadTask): Promise<void> => {
+    try {
+      const parsedPath = parseFilePath(task.webkitRelativePath);
+      if (!parsedPath) {
+        throw new Error("文件路径格式不正确");
+      }
+
+      // 调用后端 API 创建瓦片记录
+      const response = await fetch(
+        `/tile/${parsedPath.z}/${parsedPath.x}/${parsedPath.y}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "image/jpeg",
+          },
+          body: task.file,
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "上传失败");
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        messageApi.success(`文件上传成功！文件名：${result.data.fileName}`);
+
+        // 收集上传成功的瓦片数据
+        if (result.data) {
+          const tileData: TileData = {
+            id: result.data.id,
+            fileName: result.data.fileName,
+            z: result.data.z,
+            x: result.data.x,
+            y: result.data.y,
+          };
+          uploadedTilesRef.current.push(tileData);
+        }
+
+        task.onSuccess?.(result);
+      } else {
+        throw new Error(result.error || "上传失败");
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "上传失败";
+      messageApi.error(`${task.file.name}: ${errorMessage}`);
+      task.onError?.(error as Error);
+    }
+  };
+
+  /**
+   * 处理上传队列
+   */
+  const processUploadQueue = async (): Promise<void> => {
+    if (isProcessingRef.current || uploadQueueRef.current.length === 0) {
+      return;
+    }
+
+    isProcessingRef.current = true;
+    setIsUploading(true);
+
+    try {
+      while (uploadQueueRef.current.length > 0) {
+        const task = uploadQueueRef.current.shift();
+        if (task) {
+          await processSingleUpload(task);
+        }
+      }
+
+      // 所有文件上传完成后，统一调用回调函数
+      if (uploadedTilesRef.current.length > 0 && onUploadSuccess) {
+        onUploadSuccess([...uploadedTilesRef.current]);
+        uploadedTilesRef.current = [];
+      }
+
+      messageApi.success("所有文件上传完成！");
+    } finally {
+      isProcessingRef.current = false;
+      setIsUploading(false);
+    }
   };
 
   /**
@@ -101,49 +204,18 @@ export default function FolderUploader({
         throw new Error("无法获取文件路径信息");
       }
 
-      const parsedPath = parseFilePath(webkitRelativePath);
-      if (!parsedPath) {
-        throw new Error("文件路径格式不正确");
-      }
+      // 将上传任务添加到队列中
+      const task: UploadTask = {
+        file: file as File,
+        webkitRelativePath,
+        onSuccess,
+        onError,
+      };
 
-      // 调用后端 API 单个创建瓦片记录
-      const response = await fetch(
-        `/tile/${parsedPath.z}/${parsedPath.x}/${parsedPath.y}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "image/jpeg",
-          },
-          body: file as File,
-        }
-      );
+      uploadQueueRef.current.push(task);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "上传失败");
-      }
-
-      const result = await response.json();
-
-      if (result.success) {
-        messageApi.success(`文件上传成功！文件名：${result.data.fileName}`);
-
-        // 调用回调函数更新树形数据
-        if (onUploadSuccess && result.data) {
-          const tileData: TileData = {
-            id: result.data.id,
-            fileName: result.data.fileName,
-            z: result.data.z,
-            x: result.data.x,
-            y: result.data.y,
-          };
-          onUploadSuccess([tileData]);
-        }
-
-        onSuccess?.(result);
-      } else {
-        throw new Error(result.error || "上传失败");
-      }
+      // 开始处理队列
+      processUploadQueue();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "上传失败";
       messageApi.error(errorMessage);
@@ -161,8 +233,11 @@ export default function FolderUploader({
         accept=".jpg,.jpeg"
         directory
         multiple
+        disabled={isUploading}
       >
-        <Button>上传文件夹</Button>
+        <Button loading={isUploading}>
+          {isUploading ? "上传中..." : "上传文件夹"}
+        </Button>
       </Upload>
     </>
   );
