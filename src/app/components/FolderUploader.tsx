@@ -6,6 +6,14 @@ import type { TileData } from "@/app/utils/treeUtils";
 import { useRef, useState } from "react";
 
 /**
+ * 上传进度信息接口
+ */
+export interface UploadProgress {
+  isUploading: boolean;
+  percent: number;
+}
+
+/**
  * 文件夹上传组件的属性
  */
 interface FolderUploaderProps {
@@ -13,6 +21,10 @@ interface FolderUploaderProps {
    * 上传成功后的回调函数
    */
   onUploadSuccess?: (newTileData: TileData[]) => void;
+  /**
+   * 上传进度变化的回调函数
+   */
+  onProgressChange?: (progress: UploadProgress) => void;
 }
 
 /**
@@ -27,12 +39,16 @@ interface UploadTask {
 
 export default function FolderUploader({
   onUploadSuccess,
+  onProgressChange,
 }: FolderUploaderProps) {
   const [messageApi, contextHolder] = message.useMessage();
   const [isUploading, setIsUploading] = useState(false);
   const uploadQueueRef = useRef<UploadTask[]>([]);
   const isProcessingRef = useRef(false);
   const uploadedTilesRef = useRef<TileData[]>([]);
+  const totalFilesRef = useRef(0);
+  const completedFilesRef = useRef(0);
+  const isFirstFile = useRef(true);
 
   /**
    * 解析文件路径，提取z、x、y参数
@@ -71,6 +87,18 @@ export default function FolderUploader({
    */
   const processSingleUpload = async (task: UploadTask): Promise<void> => {
     try {
+      // 更新上传进度
+      const currentPercent =
+        totalFilesRef.current > 0
+          ? Math.round(
+              (completedFilesRef.current / totalFilesRef.current) * 100
+            )
+          : 0;
+      onProgressChange?.({
+        isUploading: true,
+        percent: currentPercent,
+      });
+
       const parsedPath = parseFilePath(task.webkitRelativePath);
       if (!parsedPath) {
         throw new Error("文件路径格式不正确");
@@ -110,6 +138,19 @@ export default function FolderUploader({
           uploadedTilesRef.current.push(tileData);
         }
 
+        // 更新完成文件数和进度
+        completedFilesRef.current += 1;
+        const updatedPercent =
+          totalFilesRef.current > 0
+            ? Math.round(
+                (completedFilesRef.current / totalFilesRef.current) * 100
+              )
+            : 0;
+        onProgressChange?.({
+          isUploading: true,
+          percent: updatedPercent,
+        });
+
         task.onSuccess?.(result);
       } else {
         throw new Error(result.error || "上传失败");
@@ -131,12 +172,14 @@ export default function FolderUploader({
 
     isProcessingRef.current = true;
     setIsUploading(true);
+    completedFilesRef.current = 0;
 
     try {
       while (uploadQueueRef.current.length > 0) {
         const task = uploadQueueRef.current.shift();
         if (task) {
           await processSingleUpload(task);
+          await new Promise((resolve) => setTimeout(resolve, 3000));
         }
       }
 
@@ -147,9 +190,19 @@ export default function FolderUploader({
       }
 
       messageApi.success("所有文件上传完成！");
+
+      // 上传完成后更新进度状态
+      onProgressChange?.({
+        isUploading: false,
+        percent: 100,
+      });
     } finally {
       isProcessingRef.current = false;
       setIsUploading(false);
+      // 重置计数器
+      totalFilesRef.current = 0;
+      completedFilesRef.current = 0;
+      isFirstFile.current = true;
     }
   };
 
@@ -214,8 +267,26 @@ export default function FolderUploader({
 
       uploadQueueRef.current.push(task);
 
-      // 开始处理队列
-      processUploadQueue();
+      // 更新总文件数
+      const newTotalFiles = uploadQueueRef.current.length;
+      totalFilesRef.current = newTotalFiles;
+
+      // 如果是第一个文件，重置进度并初始化
+      if (isFirstFile.current) {
+        isFirstFile.current = false;
+        completedFilesRef.current = 0;
+        onProgressChange?.({
+          isUploading: false,
+          percent: 0,
+        });
+      }
+
+      // 延迟开始处理队列，让所有文件先加入队列
+      setTimeout(() => {
+        // 更新最终的总文件数
+        totalFilesRef.current = uploadQueueRef.current.length;
+        processUploadQueue();
+      }, 100);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "上传失败";
       messageApi.error(errorMessage);

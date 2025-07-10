@@ -1,11 +1,11 @@
 "use client";
 
-import { Tree, Card, Space, message, Button, Image } from "antd";
+import { Tree, Card, Space, message, Button, Image, Progress } from "antd";
 import { useState, useRef, useEffect } from "react";
 import type { TreeDataNode } from "antd";
 import TileUploader from "./TileUploader";
 import TileDeleter from "./TileDeleter";
-import FolderUploader from "./FolderUploader";
+import FolderUploader, { type UploadProgress } from "./FolderUploader";
 import {
   addTileToTree,
   removeTilesFromTree,
@@ -32,6 +32,10 @@ export default function FolderTree() {
     visible: false,
     src: "",
     alt: "",
+  });
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress>({
+    isUploading: false,
+    percent: 0,
   });
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -238,6 +242,14 @@ export default function FolderTree() {
     });
   };
 
+  /**
+   * 处理上传进度变化
+   * @param progress 上传进度信息
+   */
+  const handleUploadProgressChange = (progress: UploadProgress) => {
+    setUploadProgress(progress);
+  };
+
   return (
     <>
       {contextHolder}
@@ -253,12 +265,18 @@ export default function FolderTree() {
                 />
                 <FolderUploader
                   onUploadSuccess={updateTreeDataAfterFolderUpload}
+                  onProgressChange={handleUploadProgressChange}
                 />
                 <TileDeleter
                   checkedKeys={checkedKeys}
                   onDeleteSuccess={updateTreeDataAfterDelete}
                 />
               </Space>
+              {uploadProgress.isUploading && (
+                <div style={{ marginTop: 16 }}>
+                  <Progress percent={uploadProgress.percent} status="active" />
+                </div>
+              )}
               <div>
                 <Tree
                   checkable
