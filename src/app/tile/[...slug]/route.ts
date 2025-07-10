@@ -112,7 +112,7 @@ export async function POST(
 
     // 上传文件到 MinIO
     const uploadResult = await uploadFileStream(buffer, {
-      fileName: fileName,
+      fileName: `${fileName}.jpg`,
       contentType: "image/jpeg",
     });
 
