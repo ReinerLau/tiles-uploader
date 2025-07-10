@@ -250,7 +250,7 @@ export default function FolderTree() {
     <>
       {contextHolder}
       <div className="inline-block h-full">
-        <Card className=" h-full">
+        <Card className="h-full">
           <div ref={containerRef}>
             <Space direction="vertical">
               <Space>
@@ -277,6 +277,7 @@ export default function FolderTree() {
               <div>
                 <Tree
                   checkable
+                  height={600}
                   treeData={treeData}
                   selectedKeys={selectedKeys}
                   expandedKeys={expandedKeys}
