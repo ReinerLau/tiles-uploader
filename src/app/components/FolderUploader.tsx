@@ -179,7 +179,6 @@ export default function FolderUploader({
         const task = uploadQueueRef.current.shift();
         if (task) {
           await processSingleUpload(task);
-          await new Promise((resolve) => setTimeout(resolve, 3000));
         }
       }
 
@@ -209,9 +208,10 @@ export default function FolderUploader({
   /**
    * 上传文件夹前的处理
    * @param file 上传的文件
+   * @param fileList 所有待上传的文件列表
    * @returns 是否继续上传
    */
-  const beforeUpload = (file: UploadFile): boolean => {
+  const beforeUpload = (file: UploadFile, fileList: UploadFile[]): boolean => {
     // 检查文件类型
     const isJpg =
       file.type === "image/jpeg" || file.name?.toLowerCase().endsWith(".jpg");
@@ -235,6 +235,17 @@ export default function FolderUploader({
         `文件 ${file.name} 的路径结构不正确，应为 z/x/y.jpg 格式`
       );
       return false;
+    }
+
+    // 使用 fileList 获取准确的上传文件数量
+    if (isFirstFile.current) {
+      isFirstFile.current = false;
+      totalFilesRef.current = fileList.length;
+      completedFilesRef.current = 0;
+      onProgressChange?.({
+        isUploading: false,
+        percent: 0,
+      });
     }
 
     return true;
@@ -267,26 +278,10 @@ export default function FolderUploader({
 
       uploadQueueRef.current.push(task);
 
-      // 更新总文件数
-      const newTotalFiles = uploadQueueRef.current.length;
-      totalFilesRef.current = newTotalFiles;
-
-      // 如果是第一个文件，重置进度并初始化
-      if (isFirstFile.current) {
-        isFirstFile.current = false;
-        completedFilesRef.current = 0;
-        onProgressChange?.({
-          isUploading: false,
-          percent: 0,
-        });
-      }
-
-      // 延迟开始处理队列，让所有文件先加入队列
-      setTimeout(() => {
-        // 更新最终的总文件数
-        totalFilesRef.current = uploadQueueRef.current.length;
+      // 只有当队列达到总文件数时才开始处理
+      if (uploadQueueRef.current.length === totalFilesRef.current) {
         processUploadQueue();
-      }, 100);
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "上传失败";
       messageApi.error(errorMessage);
