@@ -262,7 +262,7 @@ export default function FolderTree() {
                 />
               </Space>
               {uploadProgress.isUploading && (
-                <div style={{ marginTop: 16 }}>
+                <div>
                   <Progress percent={uploadProgress.percent} status="active" />
                 </div>
               )}
