@@ -56,10 +56,6 @@ export default function FolderUploader({
    * 总文件数
    */
   const totalFilesRef = useRef(0);
-  /**
-   * 是否是第一个文件
-   */
-  const isFirstFile = useRef(true);
 
   /**
    * 解析文件路径，提取z、x、y参数
@@ -207,7 +203,6 @@ export default function FolderUploader({
       setIsUploading(false);
       // 重置计数器
       totalFilesRef.current = 0;
-      isFirstFile.current = true;
     }
   };
 
@@ -243,9 +238,8 @@ export default function FolderUploader({
       return false;
     }
 
-    // 使用 fileList 获取准确的上传文件数量
-    if (isFirstFile.current) {
-      isFirstFile.current = false;
+    // 使用 isUploading 状态判断是否为新的上传批次
+    if (!isUploading && totalFilesRef.current === 0) {
       totalFilesRef.current = fileList.length;
       onProgressChange?.({
         isUploading: false,
