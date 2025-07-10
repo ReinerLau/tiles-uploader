@@ -242,8 +242,8 @@ export default function FolderTree() {
   return (
     <>
       {contextHolder}
-      <div className="p-4 inline-block">
-        <Card>
+      <div className="p-4 inline-block h-full">
+        <Card className=" h-full">
           <div ref={containerRef}>
             <Space direction="vertical">
               <Space>
