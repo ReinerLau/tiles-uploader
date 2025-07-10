@@ -1,6 +1,6 @@
 "use client";
 
-import { Tree, Card, Space, message, Button } from "antd";
+import { Tree, Card, Space, message, Button, Image } from "antd";
 import { useState, useRef, useEffect } from "react";
 import type { TreeDataNode } from "antd";
 import TileUploader from "./TileUploader";
@@ -24,6 +24,15 @@ export default function FolderTree() {
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
   const [checkedKeys, setCheckedKeys] = useState<React.Key[]>([]);
+  const [previewImage, setPreviewImage] = useState<{
+    visible: boolean;
+    src: string;
+    alt: string;
+  }>({
+    visible: false,
+    src: "",
+    alt: "",
+  });
   const containerRef = useRef<HTMLDivElement>(null);
 
   // 初始化时获取瓦片数据
@@ -65,6 +74,48 @@ export default function FolderTree() {
   }, []);
 
   /**
+   * 获取瓦片预签名 URL 并显示预览
+   * @param fileName 瓦片文件名
+   */
+  const handleTilePreview = async (fileName: string) => {
+    try {
+      // 解析文件名获取 z, x, y 坐标
+      const parts = fileName.split("-");
+      if (parts.length !== 3) {
+        throw new Error("文件名格式不正确");
+      }
+
+      const [z, x, y] = parts;
+
+      // 调用 GET 路由获取预签名 URL
+      const response = await fetch(`/tile/${z}/${x}/${y}`);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "获取图片失败");
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.data.presignedUrl) {
+        // 显示图片预览
+        setPreviewImage({
+          visible: true,
+          src: result.data.presignedUrl,
+          alt: `瓦片 ${fileName} (${z}/${x}/${y})`,
+        });
+      } else {
+        throw new Error(result.data?.urlError || "获取图片链接失败");
+      }
+    } catch (error) {
+      console.error("获取瓦片预览失败:", error);
+      messageApi.error(
+        error instanceof Error ? error.message : "获取图片预览失败"
+      );
+    }
+  };
+
+  /**
    * 自定义节点标题渲染
    * @param nodeData 节点数据
    * @returns 渲染的节点标题
@@ -80,9 +131,10 @@ export default function FolderTree() {
           style={{ padding: 0, height: "auto" }}
           onClick={(e) => {
             e.stopPropagation();
-            // 这里可以添加点击链接的逻辑，比如下载文件或查看详情
-            console.log("点击瓦片链接:", nodeData.tileId, nodeData.fileName);
-            messageApi.info(`点击了瓦片: ${nodeData.fileName}`);
+            // 调用预览函数
+            if (nodeData.fileName) {
+              handleTilePreview(nodeData.fileName);
+            }
           }}
         >
           {typeof nodeData.title === "string"
@@ -224,6 +276,18 @@ export default function FolderTree() {
           </div>
         </Card>
       </div>
+      {/* 图片预览组件 */}
+      <Image
+        style={{ display: "none" }}
+        preview={{
+          visible: previewImage.visible,
+          src: previewImage.src,
+          onVisibleChange: (visible) => {
+            setPreviewImage((prev) => ({ ...prev, visible }));
+          },
+        }}
+        alt={previewImage.alt}
+      />
     </>
   );
 }

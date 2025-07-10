@@ -133,7 +133,7 @@ export async function DELETE(request: Request) {
       if (coordTiles.length > 0) {
         // 删除 MinIO 中的文件
         for (const tile of coordTiles) {
-          const deleteResult = await deleteFile(tile.fileName);
+          const deleteResult = await deleteFile(`${tile.fileName}.jpg`);
           if (!deleteResult.success) {
             deleteErrors.push(
               `删除文件 ${tile.fileName} 失败: ${deleteResult.error}`

@@ -112,8 +112,9 @@ export default function FolderUploader({
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": "image/jpeg",
           },
+          body: file as File,
         }
       );
 

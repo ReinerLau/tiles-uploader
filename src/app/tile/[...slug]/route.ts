@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/app/utils/prisma";
-import { uploadFileStream, deleteFile } from "@/app/utils/minio";
+import { uploadFileStream, deleteFile, getFileUrl } from "@/app/utils/minio";
 
 /**
  * GET /tile/{z}/{x}/{y}
- * 获取瓦片记录列表
+ * 获取单个瓦片记录
  */
 export async function GET(
   request: NextRequest,
@@ -18,29 +18,71 @@ export async function GET(
     const x = slug[1];
     const y = slug[2];
 
-    // 构建查询条件
-    const where: {
-      z?: string;
-      x?: string;
-      y?: string;
-    } = {};
+    // 验证路径参数 - 需要完整的 z/x/y 坐标
+    if (!z || !x || !y) {
+      return NextResponse.json(
+        { error: "路径参数 z、x、y 都是必需的" },
+        { status: 400 }
+      );
+    }
 
-    if (z) where.z = z;
-    if (x) where.x = x;
-    if (y) where.y = y;
+    // 验证参数是否为有效数字格式
+    if (!/^\d+$/.test(z) || !/^\d+$/.test(x) || !/^\d+$/.test(y)) {
+      return NextResponse.json(
+        { error: "z、x、y 参数必须是有效的数字" },
+        { status: 400 }
+      );
+    }
 
-    // 查询瓦片记录
-    const tiles = await prisma.tile.findMany({
-      where,
-      orderBy: [{ z: "asc" }, { x: "asc" }, { y: "asc" }],
+    // 构建 fileName 查询条件
+    const fileName = `${z}-${x}-${y}`;
+
+    // 查询单个瓦片记录
+    const tile = await prisma.tile.findFirst({
+      where: {
+        fileName: fileName,
+      },
     });
 
-    return NextResponse.json({
-      success: true,
-      data: tiles,
-      count: tiles.length,
-      message: "获取瓦片记录成功",
-    });
+    if (!tile) {
+      return NextResponse.json(
+        {
+          error: "瓦片记录不存在",
+          details: `未找到坐标 ${z}/${x}/${y} 的瓦片记录`,
+        },
+        { status: 404 }
+      );
+    }
+
+    // 为瓦片生成预签名 URL
+    try {
+      const presignedUrl = await getFileUrl(`${tile.fileName}.jpg`);
+      const tileWithUrl = {
+        ...tile,
+        presignedUrl,
+      };
+
+      return NextResponse.json({
+        success: true,
+        data: tileWithUrl,
+        message: "获取瓦片记录成功",
+      });
+    } catch (error) {
+      console.error(`生成预签名 URL 失败 (${tile.fileName}):`, error);
+
+      // 即使URL生成失败，也返回瓦片记录，只是不包含URL
+      const tileWithError = {
+        ...tile,
+        presignedUrl: null,
+        urlError: error instanceof Error ? error.message : "未知错误",
+      };
+
+      return NextResponse.json({
+        success: true,
+        data: tileWithError,
+        message: "获取瓦片记录成功，但生成下载链接失败",
+      });
+    }
   } catch (error) {
     console.error("获取瓦片记录失败:", error);
 
