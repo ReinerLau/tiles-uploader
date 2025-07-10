@@ -1,6 +1,7 @@
 "use client";
 
 import { Tree, Card, Space, message, Button, Image, Progress } from "antd";
+import { LoadingOutlined } from "@ant-design/icons";
 import { useState, useRef, useEffect } from "react";
 import type { TreeDataNode } from "antd";
 import TileUploader from "./TileUploader";
@@ -24,6 +25,7 @@ export default function FolderTree() {
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
   const [checkedKeys, setCheckedKeys] = useState<React.Key[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [previewImage, setPreviewImage] = useState<{
     visible: boolean;
     src: string;
@@ -43,6 +45,7 @@ export default function FolderTree() {
   useEffect(() => {
     const fetchTileData = async () => {
       try {
+        setIsLoading(true);
         const response = await fetch("/tile");
         const result = await response.json();
 
@@ -54,6 +57,8 @@ export default function FolderTree() {
       } catch (error) {
         console.error("获取瓦片数据失败:", error);
         messageApi.error("获取瓦片数据失败");
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -275,18 +280,24 @@ export default function FolderTree() {
                 </div>
               )}
               <div>
-                <Tree
-                  checkable
-                  height={600}
-                  treeData={treeData}
-                  selectedKeys={selectedKeys}
-                  expandedKeys={expandedKeys}
-                  checkedKeys={checkedKeys}
-                  onSelect={onSelect}
-                  onExpand={onExpand}
-                  onCheck={onCheck}
-                  titleRender={titleRender}
-                />
+                {isLoading ? (
+                  <div className="text-center">
+                    <LoadingOutlined spin className="mr-2 text-4xl" />
+                  </div>
+                ) : (
+                  <Tree
+                    checkable
+                    height={600}
+                    treeData={treeData}
+                    selectedKeys={selectedKeys}
+                    expandedKeys={expandedKeys}
+                    checkedKeys={checkedKeys}
+                    onSelect={onSelect}
+                    onExpand={onExpand}
+                    onCheck={onCheck}
+                    titleRender={titleRender}
+                  />
+                )}
               </div>
             </Space>
           </div>
