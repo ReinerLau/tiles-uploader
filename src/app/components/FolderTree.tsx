@@ -191,11 +191,18 @@ export default function FolderTree() {
 
   /**
    * 更新树形数据 - 在瓦片上传成功后调用
-   * @param newTileData 新的瓦片数据
+   * @param newTileDataList 新的瓦片数据数组
    */
-  const updateTreeDataAfterUpload = (newTileData: TileData) => {
+  const updateTreeDataAfterUpload = (newTileDataList: TileData[]) => {
     setTreeData((prevData) => {
-      return addTileToTree(prevData, newTileData) as ExtendedTreeDataNode[];
+      let updatedData = prevData;
+      for (const tileData of newTileDataList) {
+        updatedData = addTileToTree(
+          updatedData,
+          tileData
+        ) as ExtendedTreeDataNode[];
+      }
+      return updatedData;
     });
   };
 
@@ -251,6 +258,7 @@ export default function FolderTree() {
                   selectedKeys={selectedKeys}
                   treeData={treeData}
                   onUploadSuccess={updateTreeDataAfterUpload}
+                  onProgressChange={handleUploadProgressChange}
                 />
                 <FolderUploader
                   onUploadSuccess={updateTreeDataAfterFolderUpload}
