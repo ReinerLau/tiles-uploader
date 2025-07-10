@@ -163,13 +163,8 @@ export default function TileDeleter({
       const result = await response.json();
 
       const deletedCount = result.data.deletedCount || 0;
-      const deletionSummary = result.data.deletionSummary || [];
 
-      messageApi.success(
-        `删除成功！共删除 ${deletedCount} 个瓦片记录。${deletionSummary.join(
-          "; "
-        )}`
-      );
+      messageApi.success(`删除成功！共删除 ${deletedCount} 个瓦片记录`);
 
       // 调用回调函数更新树形数据
       if (onDeleteSuccess && result.data.deletedTiles) {
