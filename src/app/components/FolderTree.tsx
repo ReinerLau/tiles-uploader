@@ -258,11 +258,6 @@ export default function FolderTree() {
                   onDeleteSuccess={updateTreeDataAfterDelete}
                 />
               </Space>
-              {uploadProgress.isUploading && (
-                <div>
-                  <Progress percent={uploadProgress.percent} status="active" />
-                </div>
-              )}
               <div>
                 {isLoading ? (
                   <div className="text-center">
@@ -283,6 +278,11 @@ export default function FolderTree() {
                   />
                 )}
               </div>
+              {uploadProgress.isUploading && (
+                <div>
+                  <Progress percent={uploadProgress.percent} status="active" />
+                </div>
+              )}
             </Space>
           </div>
         </Card>
