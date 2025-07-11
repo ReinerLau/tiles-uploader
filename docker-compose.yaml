@@ -4,7 +4,7 @@ services:
     ports:
       - 5432:5432
     environment:
-      POSTGRES_PASSWORD: lzx_2614150 
+      POSTGRES_PASSWORD: postgres 
   minio:
     image: bitnami/minio
     ports:
