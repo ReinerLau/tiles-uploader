@@ -149,16 +149,6 @@ export async function POST(
       },
     });
 
-    if (existingTile) {
-      return NextResponse.json(
-        {
-          error: "瓦片记录已存在",
-          details: `fileName "${fileName}" 已存在，无法重复创建`,
-        },
-        { status: 409 }
-      );
-    }
-
     // 获取请求体中的文件流
     const fileBuffer = await request.arrayBuffer();
     const buffer = Buffer.from(fileBuffer);
@@ -179,28 +169,41 @@ export async function POST(
       );
     }
 
-    // 创建瓦片记录
-    const tile = await prisma.tile.create({
-      data: {
-        fileName: fileName,
-        z: z,
-        x: x,
-        y: y,
-      },
-    });
+    let tile;
+    let message;
+    let statusCode;
 
-    // 返回创建的记录
+    if (existingTile) {
+      // 如果记录已存在，直接返回现有记录
+      tile = existingTile;
+      message = "瓦片记录已存在，文件已重新上传";
+      statusCode = 200;
+    } else {
+      // 创建新的瓦片记录
+      tile = await prisma.tile.create({
+        data: {
+          fileName: fileName,
+          z: z,
+          x: x,
+          y: y,
+        },
+      });
+      message = "瓦片文件上传并记录创建成功";
+      statusCode = 201;
+    }
+
+    // 返回记录
     return NextResponse.json(
       {
         success: true,
         data: tile,
-        message: "瓦片文件上传并记录创建成功",
+        message: message,
         uploadInfo: {
           etag: uploadResult.etag,
           versionId: uploadResult.versionId,
         },
       },
-      { status: 201 }
+      { status: statusCode }
     );
   } catch (error) {
     console.error("创建瓦片记录失败:", error);
