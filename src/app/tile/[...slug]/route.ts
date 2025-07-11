@@ -91,7 +91,7 @@ export async function GET(
     return new Response(readableStream, {
       headers: {
         "Content-Type": "image/jpeg",
-        "Cache-Control": "public, max-age=3600", // 缓存1小时
+        "Cache-Control": "public, max-age=600", // 缓存10分钟
       },
     });
   } catch (error) {
