@@ -157,15 +157,7 @@ export default function FolderTree() {
    * @param selectedKeys 选中文件/文件夹的key
    * @param info 选中文件/文件夹的信息
    */
-  const onSelect = (
-    selectedKeys: React.Key[],
-    info: {
-      node: ExtendedTreeDataNode;
-      selected: boolean;
-      selectedNodes: ExtendedTreeDataNode[];
-    }
-  ) => {
-    console.log("选中的文件/文件夹:", selectedKeys, info);
+  const onSelect = (selectedKeys: React.Key[]) => {
     setSelectedKeys(selectedKeys);
   };
 
@@ -178,7 +170,6 @@ export default function FolderTree() {
     expandedKeys: React.Key[],
     info: { node: ExtendedTreeDataNode; expanded: boolean }
   ) => {
-    console.log("展开的文件夹:", expandedKeys, info);
     setExpandedKeys(expandedKeys);
     // 切换文件夹展开状态时选中该文件夹
     setSelectedKeys([info.node.key]);
