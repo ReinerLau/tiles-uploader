@@ -1,36 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## 介绍
 
-## Getting Started
+一个管理地图瓦片数据的工具应用
 
-First, run the development server:
+功能:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- [x] 批量上传瓦片
+- [x] 批量删除瓦片
+- [x] 覆盖已上传瓦片
+- [x] 上传进度展示
+- [x] 单个瓦片预览
+- [x] 地图预览
+- [ ] 地图道路层展示
+
+## 架构
+
+- Next.js
+- PostgreSQL
+- MinIO
+- Prisma
+- Maptalks
+- Ant Design
+
+## 快速上手
+
+初始化后端环境:
+
+```sh
+docker compose up -d
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+运行命令后会运行以下容器:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- db: PostgreSQL 数据库, 端口 `5432` ,
+- db-adminer: 管理数据库的客户端界面, 通过 http://localhost:8080 访问
