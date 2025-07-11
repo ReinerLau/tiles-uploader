@@ -3,6 +3,7 @@ services:
     image: postgres
     ports:
       - 5432:5432
+    restart: always
     environment:
       POSTGRES_PASSWORD: postgres 
   minio:
@@ -10,9 +11,11 @@ services:
     ports:
       - 9000:9000
       - 9001:9001
+    restart: always
     environment:
       MINIO_BROWSER: "on"
   db-adminer:
     image: adminer
     ports:
       - 8080:8080
+    restart: always

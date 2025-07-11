@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "init:db": "prisma migrate dev --name init"
   },
   "dependencies": {
     "@ant-design/icons": "^6.0.0",
