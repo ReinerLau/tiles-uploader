@@ -12,8 +12,10 @@ const MapViewer = () => {
 
     // 创建地图实例
     const map = new Map(mapContainer.current, {
-      center: [116.397428, 39.90923],
-      zoom: 4,
+      center: [116.39105276720194, 39.91251388643247],
+      zoom: 18,
+      minZoom: 1,
+      maxZoom: 19,
       baseLayer: new TileLayer("base", {
         urlTemplate: "/tile/{z}/{x}/{y}",
         tileSystem: [1, 1, -20037508.34, -20037508.34],
