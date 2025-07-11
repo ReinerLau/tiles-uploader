@@ -36,7 +36,9 @@ interface FolderUploaderProps {
  */
 interface UploadTask {
   file: File;
-  webkitRelativePath: string;
+  z: string;
+  x: string;
+  y: string;
   onSuccess?: (response: unknown) => void;
   onError?: (error: Error) => void;
 }
@@ -111,22 +113,14 @@ export default function FolderUploader({
         percent: currentPercent,
       });
 
-      const parsedPath = parseFilePath(task.webkitRelativePath);
-      if (!parsedPath) {
-        throw new Error("文件路径格式不正确");
-      }
-
       // 调用后端 API 创建瓦片记录
-      const response = await fetch(
-        `/tile/${parsedPath.z}/${parsedPath.x}/${parsedPath.y}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "image/jpeg",
-          },
-          body: task.file,
-        }
-      );
+      const response = await fetch(`/tile/${task.z}/${task.x}/${task.y}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "image/jpeg",
+        },
+        body: task.file,
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -278,10 +272,17 @@ export default function FolderUploader({
         throw new Error("无法获取文件路径信息");
       }
 
+      const parsedPath = parseFilePath(webkitRelativePath);
+      if (!parsedPath) {
+        throw new Error("文件路径格式不正确");
+      }
+
       // 将上传任务添加到队列中
       const task: UploadTask = {
         file: file as File,
-        webkitRelativePath,
+        z: parsedPath.z,
+        x: parsedPath.x,
+        y: parsedPath.y,
         onSuccess,
         onError,
       };
