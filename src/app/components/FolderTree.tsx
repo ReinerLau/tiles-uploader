@@ -4,9 +4,11 @@ import { Tree, Card, Space, message, Button, Image, Progress } from "antd";
 import { LoadingOutlined } from "@ant-design/icons";
 import { useState, useRef, useEffect } from "react";
 import type { TreeDataNode } from "antd";
-import TileUploader from "./TileUploader";
+import TilesUploader, {
+  UploadMode,
+  type UploadProgress,
+} from "./TilesUploader";
 import TileDeleter from "./TileDeleter";
-import FolderUploader, { type UploadProgress } from "./FolderUploader";
 import {
   addTileToTree,
   removeTilesFromTree,
@@ -246,14 +248,16 @@ export default function FolderTree() {
           <div ref={containerRef}>
             <Space direction="vertical">
               <Space>
-                <TileUploader
+                <TilesUploader
+                  mode={UploadMode.SINGLE}
                   selectedKeys={selectedKeys}
                   treeData={treeData}
                   onUploadSuccess={updateTreeDataAfterUpload}
                   onProgressChange={handleUploadProgressChange}
                   isUploading={isUploading}
                 />
-                <FolderUploader
+                <TilesUploader
+                  mode={UploadMode.FOLDER}
                   onUploadSuccess={updateTreeDataAfterUpload}
                   onProgressChange={handleUploadProgressChange}
                   isUploading={isUploading}
