@@ -60,8 +60,18 @@ postgresql://postgres:postgres@localhost:5432/postgres
 
 ### db-adminer
 
-可操作数据库的后台管理 UI 界面
+可操作数据库的后台管理 UI
 
 通过 http://localhost:8080 访问
 
 配置参考 [docker hub](https://hub.docker.com/_/adminer)
+
+### minio
+
+实际存储文件二进制数据的服务
+
+兼容 S3 格式 API, 即便不使用本地服务也可以无痛迁移至云服务, 比如 Amazon S3
+
+通过 http://localhost:9001 访问管理 UI
+
+`9000` 是提供操作 API 的端口, 具体配置参考 [docker hub](https://hub.docker.com/r/bitnami/minio)
