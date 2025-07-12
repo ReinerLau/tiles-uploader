@@ -23,15 +23,24 @@
 
 ## 快速上手
 
-初始化后端环境 (推荐安装 [OrbStack](https://orbstack.dev/) ):
+### 1. 安装依赖
+
+```sh
+pnpm install
+```
+
+### 2. 初始化容器
 
 ```sh
 docker compose up -d
 ```
 
+> 推荐安装 [OrbStack](https://orbstack.dev/) 管理容器
+
+
 运行命令后会运行以下容器:
 
-### db
+#### db
 
 PostgreSQL 数据库服务, 通过 Prisma 连接并操作数据库 
 
@@ -58,7 +67,7 @@ postgresql://postgres:postgres@localhost:5432/postgres
 
 如 `.env` 文件中 `DATABASE_URL` 所示, 会被 `schema.prisma` 读取, [参考](https://www.prisma.io/docs/orm/reference/connection-urls#env)
 
-### db-adminer
+#### db-adminer
 
 可操作数据库的后台管理 UI
 
@@ -66,7 +75,7 @@ postgresql://postgres:postgres@localhost:5432/postgres
 
 配置参考 [docker hub](https://hub.docker.com/_/adminer)
 
-### minio
+#### minio
 
 实际存储文件二进制数据的服务
 
@@ -75,3 +84,16 @@ postgresql://postgres:postgres@localhost:5432/postgres
 通过 http://localhost:9001 访问管理 UI
 
 `9000` 是提供操作 API 的端口, 具体配置参考 [docker hub](https://hub.docker.com/r/bitnami/minio)
+
+### 3. 初始化数据库
+
+```sh
+pnpm init:db
+```
+
+该命令会进行以下操作:
+
+- 读取 `schema.prisma` 配置
+- 连接数据库
+- 创建 `Tile` 表
+- 更新 `@prisma/client` 内部代码: 提供 TypeScript 支持
