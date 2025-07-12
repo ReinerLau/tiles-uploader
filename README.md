@@ -56,4 +56,4 @@ postgresql://USER:PASSWORD@HOST:PORT/DATABASE
 postgresql://postgres:postgres@localhost:5432/postgres
 ```
 
-如 `.env` 文件中 `DATABASE_URL` 所示
+如 `.env` 文件中 `DATABASE_URL` 所示, 会被 `schema.prisma` 读取, [参考](https://www.prisma.io/docs/orm/reference/connection-urls#env)
