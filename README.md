@@ -23,7 +23,7 @@
 
 ## 快速上手
 
-初始化后端环境:
+初始化后端环境 (推荐安装 [OrbStack](https://orbstack.dev/) ):
 
 ```sh
 docker compose up -d
