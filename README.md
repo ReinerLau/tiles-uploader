@@ -97,3 +97,11 @@ pnpm init:db
 - 连接数据库
 - 创建 `Tile` 表
 - 更新 `@prisma/client` 内部代码: 提供 TypeScript 支持
+
+### 4. 运行应用
+
+```sh
+pnpm dev
+```
+
+通过 http://localhost:3000 访问
