@@ -57,3 +57,11 @@ postgresql://postgres:postgres@localhost:5432/postgres
 ```
 
 如 `.env` 文件中 `DATABASE_URL` 所示, 会被 `schema.prisma` 读取, [参考](https://www.prisma.io/docs/orm/reference/connection-urls#env)
+
+### db-adminer
+
+可操作数据库的后台管理 UI 界面
+
+通过 http://localhost:8080 访问
+
+配置参考 [docker hub](https://hub.docker.com/_/adminer)
